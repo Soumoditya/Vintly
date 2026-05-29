@@ -13,7 +13,7 @@
 //
 // After filling CLOUD_NAME below, chat media uploads work in the next build.
 
-const CLOUD_NAME = 'YOUR_CLOUD_NAME'
+const CLOUD_NAME = 'dpxrtof5z'
 const UPLOAD_PRESET = 'vintly_unsigned'
 
 export const cloudinaryReady = !CLOUD_NAME.startsWith('YOUR_')
