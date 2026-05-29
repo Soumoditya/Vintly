@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Default "Midnight" theme. Overridden at runtime by the theme engine. */
+  --brand: 124 92 255;       /* violet */
+  --brand-soft: 56 50 110;
+  --surface: 11 15 26;       /* near-black navy */
+  --card: 20 25 41;
+  --ink: 232 236 245;
+  --muted: 148 158 178;
+  --line: 38 44 64;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  background: rgb(var(--surface));
+  color: rgb(var(--ink));
+  overscroll-behavior-y: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Respect device safe areas (notches / gesture bars) */
+.safe-top {
+  padding-top: max(env(safe-area-inset-top), 12px);
+}
+.safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom), 12px);
+}
+
+/* Sleek thin scrollbars */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.glass {
+  background: rgb(var(--card) / 0.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
