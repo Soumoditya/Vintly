@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, LogOut, Trophy, Flame, CheckSquare } from 'lucide-react'
+import { ArrowLeft, LogOut, Trophy, Flame, CheckSquare, Camera, Loader2 } from 'lucide-react'
 import { useStore } from '../lib/store'
 import { useAuth, signOut } from '../lib/auth'
-import { Card, Input, Button } from '../components/ui'
+import { uploadToCloudinary, cloudinaryReady } from '../lib/cloudinary'
+import { Card, Input, Button, Avatar } from '../components/ui'
 
 const AVATARS = ['🦊', '🐼', '🦁', '🐯', '🐨', '🦉', '🐧', '🐸', '🦄', '🐵']
 
@@ -12,6 +13,24 @@ export default function Profile() {
   const { user } = useAuth()
   const nav = useNavigate()
   const done = tasks.filter((t) => t.done).length
+  const photoRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+
+  async function uploadPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]
+    if (!f) return
+    if (!cloudinaryReady) { alert('Cloudinary not connected yet.'); return }
+    setUploading(true)
+    try {
+      const url = await uploadToCloudinary(f, 'image')
+      setProfile({ avatar: url })
+    } catch {
+      alert('Upload failed, try again.')
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
 
   return (
     <div className="safe-top px-4 pb-6">
@@ -21,7 +40,13 @@ export default function Profile() {
       </div>
 
       <Card className="flex flex-col items-center py-6">
-        <div className="grid h-24 w-24 place-items-center rounded-3xl bg-brand/20 text-5xl">{profile.avatar}</div>
+        <button onClick={() => photoRef.current?.click()} className="relative">
+          <Avatar value={profile.avatar} size={96} />
+          <span className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full bg-brand text-white shadow-glow">
+            {uploading ? <Loader2 size={15} className="animate-spin" /> : <Camera size={15} />}
+          </span>
+        </button>
+        <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={uploadPhoto} />
         <p className="mt-3 text-xl font-bold">{profile.displayName}</p>
         {profile.username && <p className="text-sm text-muted">@{profile.username}</p>}
         {profile.bio && <p className="mt-2 text-center text-sm text-muted">{profile.bio}</p>}

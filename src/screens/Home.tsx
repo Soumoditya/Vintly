@@ -4,7 +4,7 @@ import {
   AlarmClock, StickyNote, Dumbbell, User,
 } from 'lucide-react'
 import { useStore } from '../lib/store'
-import { Card } from '../components/ui'
+import { Card, Avatar } from '../components/ui'
 
 export default function Home() {
   const { profile, tasks, engagement, steps, settings, events } = useStore()
@@ -33,9 +33,12 @@ export default function Home() {
     <div className="safe-top px-5 pb-8">
       {/* Header */}
       <div className="flex items-center justify-between pt-6 pb-6">
-        <div>
-          <p className="text-sm font-medium text-muted">{greet},</p>
-          <h1 className="mt-0.5 text-3xl font-extrabold tracking-tight">{profile.displayName} {profile.avatar}</h1>
+        <div className="flex items-center gap-3">
+          <Link to="/profile"><Avatar value={profile.avatar} size={52} /></Link>
+          <div>
+            <p className="text-sm font-medium text-muted">{greet},</p>
+            <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight">{profile.displayName}</h1>
+          </div>
         </div>
         <Link to="/settings" className="grid h-12 w-12 place-items-center rounded-2xl bg-card border border-line">
           <Cog size={21} />

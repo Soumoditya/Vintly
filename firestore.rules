@@ -1,0 +1,31 @@
+rules_version = '2';
+// Vintly Firestore security rules.
+// Paste these into: Firebase Console → Firestore Database → Rules → Publish.
+// They replace insecure "test mode" (which expires) with proper protection:
+// only signed-in users can read/write, and chats are private to their members.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Public user profiles — anyone signed in can look up a username to start a chat,
+    // but you can only create/edit your own profile document.
+    match /users/{uid} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Conversations — only the members listed on the conversation can access it.
+    match /conversations/{cid} {
+      allow read, write: if request.auth != null
+        && request.auth.uid in resource.data.members;
+      allow create: if request.auth != null
+        && request.auth.uid in request.resource.data.members;
+
+      // Messages inside a conversation — restricted to that conversation's members.
+      match /messages/{mid} {
+        allow read, create: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(cid)).data.members;
+      }
+    }
+  }
+}

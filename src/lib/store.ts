@@ -27,6 +27,8 @@ export interface Note {
   isChecklist: boolean
   checklist: ChecklistItem[]
   labels: string[]
+  font: string // '', 'serif', 'mono', 'rounded'
+  bg: string // background pattern key for the note
   updatedAt: number
 }
 
@@ -199,6 +201,8 @@ export const useStore = create<VintlyState>()(
               isChecklist: n.isChecklist ?? false,
               checklist: n.checklist ?? [],
               labels: n.labels ?? [],
+              font: n.font ?? '',
+              bg: n.bg ?? '',
               updatedAt: Date.now(),
             },
             ...s.notes,
@@ -276,6 +280,8 @@ export const useStore = create<VintlyState>()(
           isChecklist: false,
           checklist: [],
           labels: [],
+          font: '',
+          bg: '',
           ...n,
         }))
         applyTheme(state.settings.theme, state.settings.accent)

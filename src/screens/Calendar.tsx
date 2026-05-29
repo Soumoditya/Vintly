@@ -3,10 +3,11 @@ import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths,
   isSameMonth, isSameDay, format,
 } from 'date-fns'
-import { ChevronLeft, ChevronRight, Plus, Trash2, Clock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Trash2, Clock, PartyPopper, Landmark } from 'lucide-react'
 import { useStore } from '../lib/store'
 import { Sheet, Input, Button } from '../components/ui'
-import { scheduleReminder } from '../lib/notifications'
+import { scheduleReminder, ensureNotificationPermission } from '../lib/notifications'
+import { holidaysOn } from '../lib/holidays'
 
 const EVENT_COLORS = ['124 92 255', '16 185 129', '244 63 94', '245 158 11', '14 165 233']
 
@@ -37,10 +38,13 @@ export default function CalendarScreen() {
     dt.setHours(h, m, 0, 0)
     addEvent({ title: title.trim(), date: dt.getTime(), color, remindMinsBefore: remind ? 10 : undefined })
     if (remind) {
+      await ensureNotificationPermission()
+      // Remind 10 min before — or right at start time if the event is very soon.
+      const remindAt = dt.getTime() - 10 * 60000 > Date.now() ? new Date(dt.getTime() - 10 * 60000) : dt
       await scheduleReminder({
-        title: `Upcoming: ${title.trim()}`,
+        title: `📅 ${title.trim()}`,
         body: `Starts at ${format(dt, 'p')}`,
-        at: new Date(dt.getTime() - 10 * 60000),
+        at: remindAt,
       })
     }
     setTitle('')
@@ -63,6 +67,7 @@ export default function CalendarScreen() {
       <div className="grid grid-cols-7 gap-1">
         {days.map((d) => {
           const has = events.some((e) => isSameDay(new Date(e.date), d))
+          const hol = holidaysOn(d)
           const isSel = isSameDay(d, selected)
           const isToday = isSameDay(d, new Date())
           return (
@@ -70,11 +75,16 @@ export default function CalendarScreen() {
               key={d.toISOString()}
               onClick={() => setSelected(d)}
               className={`relative aspect-square rounded-2xl text-sm transition ${
-                isSel ? 'bg-brand text-white font-bold' : isToday ? 'bg-brand/15 text-brand' : isSameMonth(d, cursor) ? 'text-ink' : 'text-muted/40'
+                isSel ? 'bg-brand text-white font-bold' : isToday ? 'bg-brand/15 text-brand' : hol.length && isSameMonth(d, cursor) ? 'text-amber-400 font-semibold' : isSameMonth(d, cursor) ? 'text-ink' : 'text-muted/40'
               }`}
             >
               {format(d, 'd')}
-              {has && !isSel && <span className="absolute bottom-1.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-brand" />}
+              {!isSel && (has || hol.length > 0) && (
+                <span className="absolute bottom-1.5 left-1/2 flex -translate-x-1/2 gap-0.5">
+                  {has && <span className="h-1 w-1 rounded-full bg-brand" />}
+                  {hol.length > 0 && <span className="h-1 w-1 rounded-full bg-amber-400" />}
+                </span>
+              )}
             </button>
           )
         })}
@@ -86,7 +96,18 @@ export default function CalendarScreen() {
       </div>
 
       <div className="space-y-2">
-        {dayEvents.length === 0 && <p className="py-6 text-center text-sm text-muted">No events. Add one to plan your day.</p>}
+        {holidaysOn(selected).map((h, i) => (
+          <div key={i} className="flex items-center gap-3 rounded-xl2 border border-amber-400/30 bg-amber-400/10 p-3">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-amber-400/20 text-amber-400">
+              {h.type === 'national' ? <Landmark size={17} /> : <PartyPopper size={17} />}
+            </span>
+            <div className="flex-1">
+              <p className="font-medium">{h.name}</p>
+              <p className="text-xs text-muted">{h.type === 'national' ? 'Public holiday' : 'Festival'}</p>
+            </div>
+          </div>
+        ))}
+        {dayEvents.length === 0 && holidaysOn(selected).length === 0 && <p className="py-6 text-center text-sm text-muted">No events. Add one to plan your day.</p>}
         {dayEvents.map((e) => (
           <div key={e.id} className="flex items-center gap-3 rounded-xl2 bg-card border border-line/60 p-3 animate-fade-up">
             <span className="h-10 w-1.5 rounded-full" style={{ background: `rgb(${e.color})` }} />

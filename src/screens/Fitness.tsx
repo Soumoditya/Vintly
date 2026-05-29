@@ -103,8 +103,13 @@ export default function Fitness() {
         ) : (
           <p className="mt-4 max-w-xs text-center text-sm text-muted">Motion sensor unavailable here. Steps track live in the installed app. You can add manually below.</p>
         )}
-        <button onClick={() => setSteps(count + 500)} className="mt-3 flex items-center gap-1 text-sm text-muted"><Plus size={14} /> add 500 (test)</button>
       </Card>
+
+      <p className="mt-3 px-1 text-center text-xs text-muted">
+        Steps are counted from your phone's motion sensor while tracking is on and the app is open.
+        Keep the app running (or in the background) and your phone with you. 24/7 background counting
+        needs Google Fit / Health Connect — planned for a later update.
+      </p>
 
       <div className="mt-3 grid grid-cols-2 gap-3">
         <Card className="text-center">

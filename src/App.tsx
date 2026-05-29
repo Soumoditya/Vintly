@@ -5,6 +5,7 @@ import BottomNav from './components/BottomNav'
 import Home from './screens/Home'
 import Tasks from './screens/Tasks'
 import Notes from './screens/Notes'
+import NoteEditor from './screens/NoteEditor'
 import CalendarScreen from './screens/Calendar'
 import ChatList from './screens/ChatList'
 import ChatRoom from './screens/ChatRoom'
@@ -17,7 +18,7 @@ import { ensureNotificationPermission } from './lib/notifications'
 
 export default function App() {
   const loc = useLocation()
-  const hideNav = loc.pathname.startsWith('/chat/') || loc.pathname === '/auth'
+  const hideNav = loc.pathname.startsWith('/chat/') || loc.pathname.startsWith('/note/') || loc.pathname === '/auth'
 
   useEffect(() => {
     ensureNotificationPermission()
@@ -34,6 +35,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/tasks" element={<Tasks />} />
         <Route path="/notes" element={<Notes />} />
+        <Route path="/note/:id" element={<NoteEditor />} />
         <Route path="/calendar" element={<CalendarScreen />} />
         <Route path="/chat" element={<ChatList />} />
         <Route path="/chat/:cid" element={<ChatRoom />} />
