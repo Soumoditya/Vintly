@@ -1,15 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Footprints, Flame, MapPin, Play, Pause, Plus } from 'lucide-react'
+import { ArrowLeft, Footprints, Flame, MapPin, Play, Pause, HeartPulse, RefreshCw, Check } from 'lucide-react'
 import { Capacitor } from '@capacitor/core'
 import { useStore } from '../lib/store'
 import { Card, Button } from '../components/ui'
+import { healthAvailable, requestStepsPermission, getTodaySteps } from '../lib/health'
 
-// Lightweight peak-detection step counter from accelerometer magnitude.
+// Real steps come from Health Connect when available; otherwise an in-app
+// accelerometer counter is used as a fallback.
 export default function Fitness() {
   const { steps, setSteps, settings } = useStore()
   const [tracking, setTracking] = useState(false)
   const [supported, setSupported] = useState(true)
+  const [hcAvailable, setHcAvailable] = useState(false)
+  const [hcConnected, setHcConnected] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const lastPeak = useRef(0)
   const gravity = useRef(9.8) // running baseline; works whether or not gravity is included
   const armed = useRef(true)
@@ -73,7 +78,31 @@ export default function Fitness() {
     setTracking(false)
   }
 
-  useEffect(() => () => stop(), [])
+  // ---- Health Connect (real steps) ----
+  async function syncHealth() {
+    setSyncing(true)
+    const s = await getTodaySteps()
+    if (s != null) { setSteps(s); setHcConnected(true) }
+    setSyncing(false)
+  }
+  async function connectHealth() {
+    const ok = await requestStepsPermission()
+    if (ok) await syncHealth()
+  }
+
+  useEffect(() => {
+    let timer: any
+    healthAvailable().then(async (ok) => {
+      setHcAvailable(ok)
+      if (ok) {
+        await syncHealth()
+        // refresh every 30s while the screen is open
+        timer = setInterval(syncHealth, 30000)
+      }
+    })
+    return () => { clearInterval(timer); stop() }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="safe-top px-4 pb-6">
@@ -96,20 +125,40 @@ export default function Fitness() {
           </div>
         </div>
 
-        {supported ? (
+        {hcConnected ? (
+          <Button onClick={syncHealth} variant="soft" className="mt-6 w-48" disabled={syncing}>
+            <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Syncing…' : 'Refresh steps'}
+          </Button>
+        ) : supported ? (
           <Button onClick={tracking ? stop : start} variant={tracking ? 'danger' : 'primary'} className="mt-6 w-48">
             {tracking ? <><Pause size={18} /> Stop tracking</> : <><Play size={18} /> Start tracking</>}
           </Button>
         ) : (
-          <p className="mt-4 max-w-xs text-center text-sm text-muted">Motion sensor unavailable here. Steps track live in the installed app. You can add manually below.</p>
+          <p className="mt-4 max-w-xs text-center text-sm text-muted">Step tracking runs in the installed app.</p>
         )}
       </Card>
 
-      <p className="mt-3 px-1 text-center text-xs text-muted">
-        Steps are counted from your phone's motion sensor while tracking is on and the app is open.
-        Keep the app running (or in the background) and your phone with you. 24/7 background counting
-        needs Google Fit / Health Connect — planned for a later update.
-      </p>
+      {/* Health Connect — real, accurate, 24/7 step data */}
+      {hcAvailable && (
+        <Card className={`mt-3 flex items-center gap-3 ${hcConnected ? 'bg-emerald-500/10 border-emerald-500/30' : ''}`}>
+          <div className={`grid h-11 w-11 place-items-center rounded-2xl ${hcConnected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-brand/15 text-brand'}`}>
+            {hcConnected ? <Check size={20} /> : <HeartPulse size={20} />}
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold">{hcConnected ? 'Synced with Health Connect' : 'Connect Health Connect'}</p>
+            <p className="text-xs text-muted">{hcConnected ? 'Accurate steps counted 24/7 by your phone' : 'Get real, accurate steps even when the app is closed'}</p>
+          </div>
+          {!hcConnected && <Button variant="soft" onClick={connectHealth}>Connect</Button>}
+        </Card>
+      )}
+
+      {!hcConnected && (
+        <p className="mt-3 px-1 text-center text-xs text-muted">
+          {hcAvailable
+            ? 'Tip: connect Health Connect above for accurate 24/7 step counting (no app needs to stay open).'
+            : 'For accurate 24/7 steps, install "Health Connect" from the Play Store, then reopen this screen.'}
+        </p>
+      )}
 
       <div className="mt-3 grid grid-cols-2 gap-3">
         <Card className="text-center">
