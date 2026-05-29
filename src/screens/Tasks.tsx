@@ -36,9 +36,9 @@ export default function Tasks() {
   }
 
   return (
-    <div className="safe-top px-4 pb-6">
-      <div className="flex items-center justify-between py-4">
-        <h1 className="text-2xl font-extrabold">Tasks</h1>
+    <div className="safe-top px-5 pb-6">
+      <div className="flex items-center justify-between pt-5 pb-4">
+        <h1 className="text-3xl font-extrabold tracking-tight">Tasks</h1>
         <Button onClick={() => setOpen(true)} className="!px-4 !py-2.5">
           <Plus size={18} /> New
         </Button>

@@ -15,13 +15,18 @@ export interface Task {
   points: number
 }
 
+export interface ChecklistItem { id: string; text: string; done: boolean }
+
 export interface Note {
   id: string
   title: string
   body: string
   color: string // rgb triple or '' for default
   pinned: boolean
-  checklist?: { id: string; text: string; done: boolean }[]
+  archived: boolean
+  isChecklist: boolean
+  checklist: ChecklistItem[]
+  labels: string[]
   updatedAt: number
 }
 
@@ -190,7 +195,10 @@ export const useStore = create<VintlyState>()(
               body: n.body || '',
               color: n.color || '',
               pinned: false,
-              checklist: n.checklist,
+              archived: false,
+              isChecklist: n.isChecklist ?? false,
+              checklist: n.checklist ?? [],
+              labels: n.labels ?? [],
               updatedAt: Date.now(),
             },
             ...s.notes,
@@ -261,7 +269,16 @@ export const useStore = create<VintlyState>()(
     {
       name: 'vintly-store-v1',
       onRehydrateStorage: () => (state) => {
-        if (state) applyTheme(state.settings.theme, state.settings.accent)
+        if (!state) return
+        // Backfill fields added in later versions so old notes don't crash.
+        state.notes = (state.notes || []).map((n: any) => ({
+          archived: false,
+          isChecklist: false,
+          checklist: [],
+          labels: [],
+          ...n,
+        }))
+        applyTheme(state.settings.theme, state.settings.accent)
       },
     },
   ),

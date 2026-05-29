@@ -3,12 +3,32 @@ import { LocalNotifications } from '@capacitor/local-notifications'
 import { Capacitor } from '@capacitor/core'
 
 const isNative = Capacitor.isNativePlatform()
+let channelReady = false
+
+async function ensureChannel() {
+  if (!isNative || channelReady) return
+  try {
+    await LocalNotifications.createChannel({
+      id: 'vintly_reminders',
+      name: 'Reminders & alarms',
+      description: 'Task, event and alarm reminders',
+      importance: 5, // HIGH — heads-up + sound
+      visibility: 1,
+      vibration: true,
+    })
+    channelReady = true
+  } catch {
+    /* ignore */
+  }
+}
 
 export async function ensureNotificationPermission(): Promise<boolean> {
   try {
     if (isNative) {
-      const p = await LocalNotifications.requestPermissions()
-      return p.display === 'granted'
+      let perm = await LocalNotifications.checkPermissions()
+      if (perm.display !== 'granted') perm = await LocalNotifications.requestPermissions()
+      await ensureChannel()
+      return perm.display === 'granted'
     }
     if ('Notification' in window) {
       const p = await Notification.requestPermission()
@@ -22,23 +42,27 @@ export async function ensureNotificationPermission(): Promise<boolean> {
 
 let webIdCounter = 1
 
-// Schedule a reminder/alarm at a specific time.
+// Schedule a reminder/alarm at a specific time (optionally repeating).
 export async function scheduleReminder(opts: {
   id?: number
   title: string
   body: string
   at: Date
+  repeat?: 'none' | 'daily' | 'weekly'
 }): Promise<number> {
-  const id = opts.id ?? Math.floor(Date.now() % 2_000_000_000)
+  const id = opts.id ?? Math.floor(Math.random() * 2_000_000_000)
   if (isNative) {
+    await ensureNotificationPermission()
+    const every = opts.repeat === 'daily' ? 'day' : opts.repeat === 'weekly' ? 'week' : undefined
     await LocalNotifications.schedule({
       notifications: [
         {
           id,
           title: opts.title,
           body: opts.body,
-          schedule: { at: opts.at, allowWhileIdle: true },
+          channelId: 'vintly_reminders',
           smallIcon: 'ic_stat_icon',
+          schedule: { at: opts.at, allowWhileIdle: true, ...(every ? { every } : {}) },
         },
       ],
     })
@@ -74,9 +98,16 @@ export async function cancelReminder(id: number) {
 // Immediate motivational nudge (used by streak / engagement system).
 export async function notifyNow(title: string, body: string) {
   if (isNative) {
+    await ensureNotificationPermission()
     await LocalNotifications.schedule({
       notifications: [
-        { id: Math.floor(Math.random() * 1_000_000), title, body, schedule: { at: new Date(Date.now() + 500) } },
+        {
+          id: Math.floor(Math.random() * 1_000_000),
+          title,
+          body,
+          channelId: 'vintly_reminders',
+          schedule: { at: new Date(Date.now() + 400) },
+        },
       ],
     })
   } else if ('Notification' in window && Notification.permission === 'granted') {

@@ -11,8 +11,8 @@ export default function Fitness() {
   const [tracking, setTracking] = useState(false)
   const [supported, setSupported] = useState(true)
   const lastPeak = useRef(0)
-  const lastMag = useRef(0)
-  const goingUp = useRef(false)
+  const gravity = useRef(9.8) // running baseline; works whether or not gravity is included
+  const armed = useRef(true)
   const removeRef = useRef<null | (() => void)>(null)
 
   const count = steps.count
@@ -23,16 +23,17 @@ export default function Fitness() {
 
   function onAccel(x: number, y: number, z: number) {
     const mag = Math.sqrt(x * x + y * y + z * z)
+    // Low-pass baseline tracks gravity (≈9.8 if included, ≈0 if not).
+    gravity.current = gravity.current * 0.9 + mag * 0.1
+    const linear = mag - gravity.current // oscillates around 0 while walking
     const now = Date.now()
-    // smooth + detect a peak crossing ~ walking impact threshold
-    const delta = mag - lastMag.current
-    lastMag.current = mag
-    if (delta > 0.6) goingUp.current = true
-    if (goingUp.current && delta < -0.6 && mag > 10.5 && now - lastPeak.current > 300) {
-      goingUp.current = false
+    // Peak detection with a refractory period to avoid double-counting.
+    if (armed.current && linear > 1.15 && now - lastPeak.current > 280) {
+      armed.current = false
       lastPeak.current = now
       setSteps(useStore.getState().steps.count + 1)
     }
+    if (linear < 0.35) armed.current = true
   }
 
   async function start() {

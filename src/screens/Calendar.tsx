@@ -48,9 +48,9 @@ export default function CalendarScreen() {
   }
 
   return (
-    <div className="safe-top px-4 pb-6">
-      <div className="flex items-center justify-between py-4">
-        <h1 className="text-2xl font-extrabold">{format(cursor, 'MMMM yyyy')}</h1>
+    <div className="safe-top px-5 pb-6">
+      <div className="flex items-center justify-between pt-5 pb-4">
+        <h1 className="text-2xl font-extrabold tracking-tight">{format(cursor, 'MMMM yyyy')}</h1>
         <div className="flex gap-1">
           <button onClick={() => setCursor(addMonths(cursor, -1))} className="grid h-10 w-10 place-items-center rounded-2xl bg-card border border-line"><ChevronLeft size={18} /></button>
           <button onClick={() => setCursor(addMonths(cursor, 1))} className="grid h-10 w-10 place-items-center rounded-2xl bg-card border border-line"><ChevronRight size={18} /></button>
