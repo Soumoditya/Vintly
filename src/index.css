@@ -78,14 +78,16 @@ body {
   outline: none;
 }
 
-/* Calendar page-turn animation */
+/* Calendar page-turn animation — mimics a paper page flipping over */
 @keyframes page-next {
-  from { transform: perspective(1400px) rotateY(-32deg) translateX(38%); opacity: 0; }
-  to { transform: perspective(1400px) rotateY(0) translateX(0); opacity: 1; }
+  0% { transform: perspective(1600px) rotateY(-58deg) scale(0.94); opacity: 0; filter: brightness(0.55); box-shadow: 24px 0 40px rgba(0,0,0,0.5); }
+  55% { opacity: 1; }
+  100% { transform: perspective(1600px) rotateY(0deg) scale(1); opacity: 1; filter: brightness(1); }
 }
 @keyframes page-prev {
-  from { transform: perspective(1400px) rotateY(32deg) translateX(-38%); opacity: 0; }
-  to { transform: perspective(1400px) rotateY(0) translateX(0); opacity: 1; }
+  0% { transform: perspective(1600px) rotateY(58deg) scale(0.94); opacity: 0; filter: brightness(0.55); box-shadow: -24px 0 40px rgba(0,0,0,0.5); }
+  55% { opacity: 1; }
+  100% { transform: perspective(1600px) rotateY(0deg) scale(1); opacity: 1; filter: brightness(1); }
 }
-.page-next { animation: page-next 0.4s cubic-bezier(0.22, 1, 0.36, 1); transform-origin: left center; }
-.page-prev { animation: page-prev 0.4s cubic-bezier(0.22, 1, 0.36, 1); transform-origin: right center; }
+.page-next { animation: page-next 0.5s cubic-bezier(0.34, 1.2, 0.4, 1); transform-origin: left center; will-change: transform; }
+.page-prev { animation: page-prev 0.5s cubic-bezier(0.34, 1.2, 0.4, 1); transform-origin: right center; will-change: transform; }

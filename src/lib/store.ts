@@ -49,6 +49,7 @@ export interface Reminder {
   notifId?: number
   repeat: 'none' | 'daily' | 'weekly'
   done: boolean
+  alarm?: boolean
 }
 
 export interface Profile {

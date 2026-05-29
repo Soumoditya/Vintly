@@ -76,15 +76,16 @@ export default function CalendarScreen() {
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted">
-        {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => <div key={i} className="py-1">{d}</div>)}
-      </div>
       <div
         key={format(cursor, 'yyyy-MM')}
-        className={`grid grid-cols-7 gap-1 ${dir === 'next' ? 'page-next' : 'page-prev'}`}
+        className={`rounded-3xl ${dir === 'next' ? 'page-next' : 'page-prev'}`}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
+        <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted">
+          {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => <div key={i} className="py-1">{d}</div>)}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
         {days.map((d) => {
           const has = events.some((e) => isSameDay(new Date(e.date), d))
           const hol = holidaysOn(d)
@@ -108,6 +109,7 @@ export default function CalendarScreen() {
             </button>
           )
         })}
+        </div>
       </div>
 
       <div className="mt-5 mb-2 flex items-center justify-between">

@@ -3,12 +3,13 @@ import { ArrowLeft, Trophy } from 'lucide-react'
 import { useStore } from '../lib/store'
 
 const GAMES = [
-  { id: 'math', name: 'Quick Math', emoji: '⚡', desc: 'Beat the clock', tint: '245 158 11', key: 'quickmath' },
+  { id: 'car', name: 'Car Racing', emoji: '🏎️', desc: 'Dodge traffic, grab cash', tint: '244 63 94', key: 'car' },
+  { id: 'mart', name: 'Mini Mart', emoji: '🛒', desc: 'Catch the groceries', tint: '16 185 129', key: 'mart' },
   { id: '2048', name: '2048', emoji: '🔢', desc: 'Merge to win', tint: '124 92 255', key: '2048' },
-  { id: 'puzzle', name: 'Sliding Puzzle', emoji: '🧩', desc: 'Arrange the tiles', tint: '16 185 129', key: '' },
-  { id: 'memory', name: 'Memory Match', emoji: '🃏', desc: 'Find the pairs', tint: '236 72 153', key: '' },
   { id: 'snake', name: 'Snake', emoji: '🐍', desc: 'Classic & calm', tint: '14 165 233', key: 'snake' },
-  { id: 'dash', name: 'Vintly Dash', emoji: '🏃', desc: 'Endless runner', tint: '244 63 94', key: 'runner' },
+  { id: 'math', name: 'Quick Math', emoji: '⚡', desc: 'Beat the clock', tint: '245 158 11', key: 'quickmath' },
+  { id: 'memory', name: 'Memory Match', emoji: '🃏', desc: 'Find the pairs', tint: '236 72 153', key: '' },
+  { id: 'puzzle', name: 'Sliding Puzzle', emoji: '🧩', desc: 'Arrange the tiles', tint: '99 102 241', key: '' },
 ]
 
 export default function Games() {

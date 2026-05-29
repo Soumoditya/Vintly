@@ -17,12 +17,15 @@ import Game2048 from './games/Game2048'
 import SlidingPuzzle from './games/SlidingPuzzle'
 import MemoryMatch from './games/MemoryMatch'
 import Snake from './games/Snake'
-import Runner from './games/Runner'
+import CarRace from './games/CarRace'
+import MiniMart from './games/MiniMart'
 import Profile from './screens/Profile'
 import Settings from './screens/Settings'
 import Auth from './screens/Auth'
 import { ensureNotificationPermission } from './lib/notifications'
 import { syncEngagementNudges } from './lib/engagement'
+import { startAlarmWatcher } from './lib/alarm'
+import AlarmRing from './components/AlarmRing'
 import { useStore } from './lib/store'
 
 export default function App() {
@@ -34,6 +37,7 @@ export default function App() {
       // (Re)schedule daily motivational nudges + streak reminders.
       syncEngagementNudges(useStore.getState().settings)
     })
+    startAlarmWatcher()
     if (Capacitor.isNativePlatform()) {
       import('@capacitor/status-bar')
         .then(({ StatusBar, Style }) => StatusBar.setStyle({ style: Style.Dark }))
@@ -59,13 +63,15 @@ export default function App() {
         <Route path="/games/puzzle" element={<SlidingPuzzle />} />
         <Route path="/games/memory" element={<MemoryMatch />} />
         <Route path="/games/snake" element={<Snake />} />
-        <Route path="/games/dash" element={<Runner />} />
+        <Route path="/games/car" element={<CarRace />} />
+        <Route path="/games/mart" element={<MiniMart />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/auth" element={<Auth />} />
       </Routes>
       {!hideNav && <div className="h-24" />}
       {!hideNav && <BottomNav />}
+      <AlarmRing />
     </div>
   )
 }
