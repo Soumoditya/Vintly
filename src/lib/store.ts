@@ -88,6 +88,7 @@ interface VintlyState {
   engagement: Engagement
   settings: Settings
   steps: { day: string; count: number }
+  bestScores: Record<string, number>
 
   // profile
   setProfile: (p: Partial<Profile>) => void
@@ -120,6 +121,9 @@ interface VintlyState {
 
   // fitness
   setSteps: (count: number) => void
+
+  // games
+  setBest: (game: string, score: number) => void
 }
 
 const todayKey = () => new Date().toISOString().slice(0, 10)
@@ -154,6 +158,7 @@ export const useStore = create<VintlyState>()(
         morningNudgeTime: '09:00',
       },
       steps: { day: todayKey(), count: 0 },
+      bestScores: {},
 
       setProfile: (p) => set((s) => ({ profile: { ...s.profile, ...p } })),
 
@@ -277,6 +282,11 @@ export const useStore = create<VintlyState>()(
         const day = todayKey()
         set((s) => ({ steps: { day, count: s.steps.day === day ? count : count } }))
       },
+
+      setBest: (game, score) =>
+        set((s) => ({
+          bestScores: { ...s.bestScores, [game]: Math.max(s.bestScores?.[game] || 0, score) },
+        })),
     }),
     {
       name: 'vintly-store-v1',

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths,
   isSameMonth, isSameDay, format,
@@ -20,6 +20,21 @@ export default function CalendarScreen() {
   const [time, setTime] = useState('09:00')
   const [color, setColor] = useState(EVENT_COLORS[0])
   const [remind, setRemind] = useState(true)
+  const [dir, setDir] = useState<'next' | 'prev'>('next')
+  const swipe = useRef<{ x: number; y: number } | null>(null)
+
+  function changeMonth(delta: number) {
+    setDir(delta > 0 ? 'next' : 'prev')
+    setCursor((c) => addMonths(c, delta))
+  }
+  function onTouchStart(e: React.TouchEvent) { swipe.current = { x: e.touches[0].clientX, y: e.touches[0].clientY } }
+  function onTouchEnd(e: React.TouchEvent) {
+    if (!swipe.current) return
+    const dx = e.changedTouches[0].clientX - swipe.current.x
+    const dy = e.changedTouches[0].clientY - swipe.current.y
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) changeMonth(dx < 0 ? 1 : -1)
+    swipe.current = null
+  }
 
   const monthStart = startOfMonth(cursor)
   const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 })
@@ -56,15 +71,20 @@ export default function CalendarScreen() {
       <div className="flex items-center justify-between pt-5 pb-4">
         <h1 className="text-2xl font-extrabold tracking-tight">{format(cursor, 'MMMM yyyy')}</h1>
         <div className="flex gap-1">
-          <button onClick={() => setCursor(addMonths(cursor, -1))} className="grid h-10 w-10 place-items-center rounded-2xl bg-card border border-line"><ChevronLeft size={18} /></button>
-          <button onClick={() => setCursor(addMonths(cursor, 1))} className="grid h-10 w-10 place-items-center rounded-2xl bg-card border border-line"><ChevronRight size={18} /></button>
+          <button onClick={() => changeMonth(-1)} className="grid h-10 w-10 place-items-center rounded-2xl bg-card border border-line"><ChevronLeft size={18} /></button>
+          <button onClick={() => changeMonth(1)} className="grid h-10 w-10 place-items-center rounded-2xl bg-card border border-line"><ChevronRight size={18} /></button>
         </div>
       </div>
 
       <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted">
         {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => <div key={i} className="py-1">{d}</div>)}
       </div>
-      <div className="grid grid-cols-7 gap-1">
+      <div
+        key={format(cursor, 'yyyy-MM')}
+        className={`grid grid-cols-7 gap-1 ${dir === 'next' ? 'page-next' : 'page-prev'}`}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
         {days.map((d) => {
           const has = events.some((e) => isSameDay(new Date(e.date), d))
           const hol = holidaysOn(d)

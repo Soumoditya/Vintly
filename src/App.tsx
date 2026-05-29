@@ -11,6 +11,13 @@ import ChatList from './screens/ChatList'
 import ChatRoom from './screens/ChatRoom'
 import Fitness from './screens/Fitness'
 import Reminders from './screens/Reminders'
+import Games from './screens/Games'
+import QuickMath from './games/QuickMath'
+import Game2048 from './games/Game2048'
+import SlidingPuzzle from './games/SlidingPuzzle'
+import MemoryMatch from './games/MemoryMatch'
+import Snake from './games/Snake'
+import Runner from './games/Runner'
 import Profile from './screens/Profile'
 import Settings from './screens/Settings'
 import Auth from './screens/Auth'
@@ -20,7 +27,7 @@ import { useStore } from './lib/store'
 
 export default function App() {
   const loc = useLocation()
-  const hideNav = loc.pathname.startsWith('/chat/') || loc.pathname.startsWith('/note/') || loc.pathname === '/auth'
+  const hideNav = loc.pathname.startsWith('/chat/') || loc.pathname.startsWith('/note/') || loc.pathname.startsWith('/games/') || loc.pathname === '/auth'
 
   useEffect(() => {
     ensureNotificationPermission().then(() => {
@@ -46,6 +53,13 @@ export default function App() {
         <Route path="/chat/:cid" element={<ChatRoom />} />
         <Route path="/fitness" element={<Fitness />} />
         <Route path="/reminders" element={<Reminders />} />
+        <Route path="/games" element={<Games />} />
+        <Route path="/games/math" element={<QuickMath />} />
+        <Route path="/games/2048" element={<Game2048 />} />
+        <Route path="/games/puzzle" element={<SlidingPuzzle />} />
+        <Route path="/games/memory" element={<MemoryMatch />} />
+        <Route path="/games/snake" element={<Snake />} />
+        <Route path="/games/dash" element={<Runner />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/auth" element={<Auth />} />
