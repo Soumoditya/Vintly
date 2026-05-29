@@ -8,6 +8,7 @@ import { useAuth, signOut } from '../lib/auth'
 import { uploadToCloudinary, cloudinaryReady } from '../lib/cloudinary'
 import { Card, Button, Input } from '../components/ui'
 import { notifyNow, ensureNotificationPermission } from '../lib/notifications'
+import { syncEngagementNudges } from '../lib/engagement'
 
 const THEMES: { id: ThemeName; label: string; swatch: string }[] = [
   { id: 'midnight', label: 'Midnight', swatch: '#0b0f1a' },
@@ -115,9 +116,37 @@ export default function Settings() {
         <span className="w-16 text-right font-semibold">{settings.stepGoal.toLocaleString()}</span>
       </Card>
 
-      {/* Notifications */}
-      <h2 className="mb-2 flex items-center gap-2 font-bold"><Bell size={18} /> Notifications</h2>
-      <Card className="mb-3">
+      {/* Notifications & motivation */}
+      <h2 className="mb-2 flex items-center gap-2 font-bold"><Bell size={18} /> Notifications & motivation</h2>
+      <Card className="mb-3 space-y-3">
+        <label className="flex items-center justify-between gap-3">
+          <span>
+            <span className="block text-sm font-medium">🔥 Daily streak reminder</span>
+            <span className="block text-xs text-muted">Nudges you to keep your streak alive</span>
+          </span>
+          <input type="checkbox" checked={settings.streakReminder} onChange={async (e) => { setSettings({ streakReminder: e.target.checked }); await syncEngagementNudges(useStore.getState().settings) }} className="h-5 w-5 accent-[rgb(var(--brand))]" />
+        </label>
+        {settings.streakReminder && (
+          <div className="flex items-center justify-between pl-1">
+            <span className="text-sm text-muted">Remind at</span>
+            <input type="time" value={settings.streakReminderTime} onChange={async (e) => { setSettings({ streakReminderTime: e.target.value }); await syncEngagementNudges(useStore.getState().settings) }} className="rounded-xl bg-surface border border-line px-3 py-2 text-ink" />
+          </div>
+        )}
+        <div className="h-px bg-line" />
+        <label className="flex items-center justify-between gap-3">
+          <span>
+            <span className="block text-sm font-medium">☀️ Morning planner nudge</span>
+            <span className="block text-xs text-muted">Start your day with intention</span>
+          </span>
+          <input type="checkbox" checked={settings.morningNudge} onChange={async (e) => { setSettings({ morningNudge: e.target.checked }); await syncEngagementNudges(useStore.getState().settings) }} className="h-5 w-5 accent-[rgb(var(--brand))]" />
+        </label>
+        {settings.morningNudge && (
+          <div className="flex items-center justify-between pl-1">
+            <span className="text-sm text-muted">Nudge at</span>
+            <input type="time" value={settings.morningNudgeTime} onChange={async (e) => { setSettings({ morningNudgeTime: e.target.value }); await syncEngagementNudges(useStore.getState().settings) }} className="rounded-xl bg-surface border border-line px-3 py-2 text-ink" />
+          </div>
+        )}
+        <div className="h-px bg-line" />
         <Button variant="ghost" className="w-full" onClick={async () => { await ensureNotificationPermission(); notifyNow('Vintly 👋', 'Notifications are working!') }}>Send a test notification</Button>
       </Card>
 

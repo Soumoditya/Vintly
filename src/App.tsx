@@ -15,13 +15,18 @@ import Profile from './screens/Profile'
 import Settings from './screens/Settings'
 import Auth from './screens/Auth'
 import { ensureNotificationPermission } from './lib/notifications'
+import { syncEngagementNudges } from './lib/engagement'
+import { useStore } from './lib/store'
 
 export default function App() {
   const loc = useLocation()
   const hideNav = loc.pathname.startsWith('/chat/') || loc.pathname.startsWith('/note/') || loc.pathname === '/auth'
 
   useEffect(() => {
-    ensureNotificationPermission()
+    ensureNotificationPermission().then(() => {
+      // (Re)schedule daily motivational nudges + streak reminders.
+      syncEngagementNudges(useStore.getState().settings)
+    })
     if (Capacitor.isNativePlatform()) {
       import('@capacitor/status-bar')
         .then(({ StatusBar, Style }) => StatusBar.setStyle({ style: Style.Dark }))

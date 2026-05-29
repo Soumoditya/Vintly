@@ -65,6 +65,10 @@ export interface Settings {
   chatWallpaper: string // css value or ''
   hapticsEnabled: boolean
   stepGoal: number
+  streakReminder: boolean
+  streakReminderTime: string // 'HH:MM'
+  morningNudge: boolean
+  morningNudgeTime: string
 }
 
 interface Engagement {
@@ -144,6 +148,10 @@ export const useStore = create<VintlyState>()(
         chatWallpaper: '',
         hapticsEnabled: true,
         stepGoal: 8000,
+        streakReminder: true,
+        streakReminderTime: '20:00',
+        morningNudge: true,
+        morningNudgeTime: '09:00',
       },
       steps: { day: todayKey(), count: 0 },
 
@@ -284,6 +292,13 @@ export const useStore = create<VintlyState>()(
           bg: '',
           ...n,
         }))
+        state.settings = {
+          streakReminder: true,
+          streakReminderTime: '20:00',
+          morningNudge: true,
+          morningNudgeTime: '09:00',
+          ...state.settings,
+        }
         applyTheme(state.settings.theme, state.settings.accent)
       },
     },
