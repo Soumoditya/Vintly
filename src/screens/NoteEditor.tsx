@@ -33,7 +33,7 @@ export default function NoteEditor() {
   const { id = '' } = useParams()
   const nav = useNavigate()
   const note = useStore((s) => s.notes.find((n) => n.id === id))
-  const { updateNote, deleteNote } = useStore()
+  const { updateNote, deleteNote, trashNote } = useStore()
   const bodyRef = useRef<HTMLDivElement>(null)
   const [panel, setPanel] = useState<'color' | 'font' | 'bg' | 'label' | null>(null)
   const [labelInput, setLabelInput] = useState('')
@@ -91,7 +91,7 @@ export default function NoteEditor() {
           <button onClick={() => { updateNote(note.id, { archived: !note.archived }); nav('/notes') }} className="grid h-11 w-11 place-items-center rounded-2xl text-muted">
             {note.archived ? <ArchiveRestore size={20} /> : <Archive size={20} />}
           </button>
-          <button onClick={() => { deleteNote(note.id); nav('/notes') }} className="grid h-11 w-11 place-items-center rounded-2xl text-rose-400">
+          <button onClick={() => { trashNote(note.id); nav('/notes') }} className="grid h-11 w-11 place-items-center rounded-2xl text-rose-400">
             <Trash2 size={20} />
           </button>
         </div>

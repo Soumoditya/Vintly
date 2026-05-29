@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import {
   Flame, Trophy, Footprints, Bell, Settings as Cog, CheckCircle2, Plus,
-  AlarmClock, StickyNote, Dumbbell, Gamepad2,
+  AlarmClock, Dumbbell, Gamepad2, CloudSun,
 } from 'lucide-react'
 import { useStore } from '../lib/store'
 import { Card, Avatar } from '../components/ui'
@@ -23,10 +23,10 @@ export default function Home() {
     .slice(0, 2)
 
   const quick = [
+    { to: '/weather', icon: CloudSun, label: 'Weather', tint: '14 165 233' },
     { to: '/games', icon: Gamepad2, label: 'Games', tint: '236 72 153' },
     { to: '/reminders', icon: AlarmClock, label: 'Reminders', tint: '245 158 11' },
     { to: '/fitness', icon: Dumbbell, label: 'Fitness', tint: '244 63 94' },
-    { to: '/notes', icon: StickyNote, label: 'Notes', tint: '16 185 129' },
   ]
 
   return (

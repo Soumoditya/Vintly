@@ -8,7 +8,10 @@ import {
   addDoc,
   doc,
   setDoc,
+  getDoc,
   getDocs,
+  updateDoc,
+  deleteDoc,
   serverTimestamp,
   limit,
 } from 'firebase/firestore'
@@ -23,6 +26,7 @@ export interface Message {
   kind: MsgKind
   text?: string
   mediaUrl?: string
+  reactions?: Record<string, string>
   createdAt: number
 }
 
@@ -95,6 +99,7 @@ export function listenMessages(cid: string, cb: (msgs: Message[]) => void) {
           kind: data.kind,
           text: data.text,
           mediaUrl: data.mediaUrl,
+          reactions: data.reactions || {},
           createdAt: data.createdAt?.toMillis?.() ?? Date.now(),
         }
       }),
@@ -119,6 +124,30 @@ export async function sendMessage(
     { updatedAt: serverTimestamp(), lastText: payload.text || `[${payload.kind}]` },
     { merge: true },
   )
+}
+
+export async function getConversation(cid: string): Promise<any | null> {
+  const fb = getFb()
+  if (!fb) return null
+  const snap = await getDoc(doc(fb.db, 'conversations', cid))
+  return snap.exists() ? snap.data() : null
+}
+
+export async function toggleReaction(cid: string, msgId: string, uid: string, emoji: string) {
+  const fb = getFb()
+  if (!fb) return
+  const ref = doc(fb.db, 'conversations', cid, 'messages', msgId)
+  const snap = await getDoc(ref)
+  const reactions = { ...(snap.data()?.reactions || {}) }
+  if (reactions[uid] === emoji) delete reactions[uid]
+  else reactions[uid] = emoji
+  await updateDoc(ref, { reactions })
+}
+
+export async function deleteMessage(cid: string, msgId: string) {
+  const fb = getFb()
+  if (!fb) return
+  await deleteDoc(doc(fb.db, 'conversations', cid, 'messages', msgId))
 }
 
 export async function uploadMedia(_cid: string, file: Blob, ext: string): Promise<string> {

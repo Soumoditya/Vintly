@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
-  Plus, Pin, Search, X, Archive, CheckSquare, Square, ListChecks, StickyNote,
+  Plus, Pin, Search, X, Archive, CheckSquare, Square, ListChecks, StickyNote, Trash2,
 } from 'lucide-react'
 import { useStore, type Note } from '../lib/store'
 import { EmptyState } from '../components/ui'
@@ -25,7 +25,7 @@ export default function Notes() {
 
   const term = q.toLowerCase().trim()
   const visible = notes
-    .filter((n) => n.archived === showArchived)
+    .filter((n) => !n.trashed && n.archived === showArchived)
     .filter((n) => !activeLabel || n.labels.includes(activeLabel))
     .filter((n) =>
       !term ||
@@ -81,9 +81,12 @@ export default function Notes() {
     <div className="safe-top px-5 pb-6">
       <div className="flex items-center justify-between pt-5 pb-3">
         <h1 className="text-3xl font-extrabold tracking-tight">Notes</h1>
-        <button onClick={() => setShowArchived((v) => !v)} className={`grid h-11 w-11 place-items-center rounded-2xl border border-line ${showArchived ? 'bg-brand/15 text-brand' : 'bg-card text-muted'}`}>
-          <Archive size={19} />
-        </button>
+        <div className="flex gap-2">
+          <Link to="/bin" className="grid h-11 w-11 place-items-center rounded-2xl border border-line bg-card text-muted"><Trash2 size={19} /></Link>
+          <button onClick={() => setShowArchived((v) => !v)} className={`grid h-11 w-11 place-items-center rounded-2xl border border-line ${showArchived ? 'bg-brand/15 text-brand' : 'bg-card text-muted'}`}>
+            <Archive size={19} />
+          </button>
+        </div>
       </div>
 
       <div className="mb-3 flex items-center gap-2 rounded-2xl bg-card border border-line px-4 py-1">

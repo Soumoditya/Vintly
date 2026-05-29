@@ -29,6 +29,8 @@ export interface Note {
   labels: string[]
   font: string // '', 'serif', 'mono', 'rounded'
   bg: string // background pattern key for the note
+  trashed: boolean
+  trashedAt?: number
   updatedAt: number
 }
 
@@ -104,6 +106,8 @@ interface VintlyState {
   addNote: (n: Partial<Note>) => string
   updateNote: (id: string, patch: Partial<Note>) => void
   deleteNote: (id: string) => void
+  trashNote: (id: string) => void
+  restoreNote: (id: string) => void
 
   // events
   addEvent: (e: Partial<CalEvent>) => void
@@ -217,6 +221,7 @@ export const useStore = create<VintlyState>()(
               labels: n.labels ?? [],
               font: n.font ?? '',
               bg: n.bg ?? '',
+              trashed: false,
               updatedAt: Date.now(),
             },
             ...s.notes,
@@ -229,6 +234,10 @@ export const useStore = create<VintlyState>()(
           notes: s.notes.map((n) => (n.id === id ? { ...n, ...patch, updatedAt: Date.now() } : n)),
         })),
       deleteNote: (id) => set((s) => ({ notes: s.notes.filter((n) => n.id !== id) })),
+      trashNote: (id) =>
+        set((s) => ({ notes: s.notes.map((n) => (n.id === id ? { ...n, trashed: true, trashedAt: Date.now(), pinned: false } : n)) })),
+      restoreNote: (id) =>
+        set((s) => ({ notes: s.notes.map((n) => (n.id === id ? { ...n, trashed: false, trashedAt: undefined } : n)) })),
 
       addEvent: (e) =>
         set((s) => ({
@@ -301,6 +310,7 @@ export const useStore = create<VintlyState>()(
           labels: [],
           font: '',
           bg: '',
+          trashed: false,
           ...n,
         }))
         state.settings = {

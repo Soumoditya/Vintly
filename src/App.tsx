@@ -6,19 +6,18 @@ import Home from './screens/Home'
 import Tasks from './screens/Tasks'
 import Notes from './screens/Notes'
 import NoteEditor from './screens/NoteEditor'
+import Bin from './screens/Bin'
 import CalendarScreen from './screens/Calendar'
 import ChatList from './screens/ChatList'
 import ChatRoom from './screens/ChatRoom'
 import Fitness from './screens/Fitness'
 import Reminders from './screens/Reminders'
 import Games from './screens/Games'
+import Weather from './screens/Weather'
 import QuickMath from './games/QuickMath'
-import Game2048 from './games/Game2048'
-import SlidingPuzzle from './games/SlidingPuzzle'
 import MemoryMatch from './games/MemoryMatch'
 import Snake from './games/Snake'
 import CarRace from './games/CarRace'
-import MiniMart from './games/MiniMart'
 import Profile from './screens/Profile'
 import Settings from './screens/Settings'
 import Auth from './screens/Auth'
@@ -52,19 +51,18 @@ export default function App() {
         <Route path="/tasks" element={<Tasks />} />
         <Route path="/notes" element={<Notes />} />
         <Route path="/note/:id" element={<NoteEditor />} />
+        <Route path="/bin" element={<Bin />} />
         <Route path="/calendar" element={<CalendarScreen />} />
         <Route path="/chat" element={<ChatList />} />
         <Route path="/chat/:cid" element={<ChatRoom />} />
         <Route path="/fitness" element={<Fitness />} />
         <Route path="/reminders" element={<Reminders />} />
         <Route path="/games" element={<Games />} />
+        <Route path="/weather" element={<Weather />} />
         <Route path="/games/math" element={<QuickMath />} />
-        <Route path="/games/2048" element={<Game2048 />} />
-        <Route path="/games/puzzle" element={<SlidingPuzzle />} />
         <Route path="/games/memory" element={<MemoryMatch />} />
         <Route path="/games/snake" element={<Snake />} />
         <Route path="/games/car" element={<CarRace />} />
-        <Route path="/games/mart" element={<MiniMart />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/auth" element={<Auth />} />
