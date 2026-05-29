@@ -1,0 +1,14 @@
+node_modules
+dist
+.DS_Store
+*.log
+
+# Capacitor / Android (generated in CI)
+android
+.gradle
+local.properties
+*.keystore
+
+# Env
+.env
+.env.local
