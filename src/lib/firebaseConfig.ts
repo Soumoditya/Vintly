@@ -1,29 +1,24 @@
-// 👇 PASTE YOUR FIREBASE CONFIG HERE (Phase 2: accounts + chat + push)
+// ✅ Firebase is configured for project "vintlyy".
+// These web-config values are PUBLIC by design (Google intends them to ship in
+// client apps); real security comes from Firestore rules, not from hiding these.
 //
-// How to get it from your PHONE (no computer needed):
-//  1. Go to  https://console.firebase.google.com  and sign in with Google.
-//  2. Tap "Create a project" → name it "Vintly" → Continue (you can disable Analytics).
-//  3. Inside the project, tap the </> "Web" icon to "Add a web app", nickname "Vintly".
-//  4. Firebase shows a `firebaseConfig = { ... }` block. Copy those values below.
-//  5. In the left menu: Build → Authentication → Get started → enable "Email/Password".
-//  6. Build → Firestore Database → Create database → Start in *test mode* (for now).
-//  7. Build → Storage → Get started (for sending media in chat).
+// Media (photos, voice notes, files) is NOT stored in Firebase Storage — that
+// now requires a paid plan. Vintly uses Cloudinary (free) instead. See
+// src/lib/cloudinary.ts.
 //
-// These keys are SAFE to commit — Firebase web config is public by design;
-// security is enforced by Firestore/Storage rules, not by hiding these.
-//
-// Until you fill these in, Vintly runs fully in OFFLINE mode (tasks, notes,
-// calendar, reminders, streaks all work locally on your device).
+// Remaining one-time setup in the Firebase console (from your phone):
+//   • Build → Authentication → Get started → enable "Email/Password".
+//   • Build → Firestore Database → Create database → Start in *test mode*.
 
 export const firebaseConfig = {
-  apiKey: 'YOUR_API_KEY',
-  authDomain: 'YOUR_PROJECT.firebaseapp.com',
-  projectId: 'YOUR_PROJECT',
-  storageBucket: 'YOUR_PROJECT.appspot.com',
-  messagingSenderId: 'YOUR_SENDER_ID',
-  appId: 'YOUR_APP_ID',
+  apiKey: 'AIzaSyBvFF70OqRN-N9jhN8TLTCgx6j76yoxdNs',
+  authDomain: 'vintlyy.firebaseapp.com',
+  projectId: 'vintlyy',
+  storageBucket: 'vintlyy.firebasestorage.app',
+  messagingSenderId: '1085757864702',
+  appId: '1:1085757864702:web:e61c8ffcd818301a1f43af',
+  measurementId: 'G-NTL7PY9JO1',
 }
 
 export const isFirebaseConfigured =
-  !firebaseConfig.apiKey.startsWith('YOUR_') &&
-  firebaseConfig.apiKey.length > 10
+  !firebaseConfig.apiKey.startsWith('YOUR_') && firebaseConfig.apiKey.length > 10
