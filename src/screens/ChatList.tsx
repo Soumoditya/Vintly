@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MessageCircle, Plus, Search, Lock } from 'lucide-react'
+import { MessageCircle, Plus, Search, Lock, Pin } from 'lucide-react'
 import { useAuth } from '../lib/auth'
 import { listenConversations, findUserByUsername, ensureConversation, convId } from '../lib/chat'
 import { useStore } from '../lib/store'
@@ -9,6 +9,9 @@ import { Sheet, Input, Button, EmptyState, Card } from '../components/ui'
 export default function ChatList() {
   const { user, ready } = useAuth()
   const profile = useStore((s) => s.profile)
+  const pinned = useStore((s) => s.pinnedChats)
+  const togglePinChat = useStore((s) => s.togglePinChat)
+  const pressTimer = useRef<any>(null)
   const nav = useNavigate()
   const [convs, setConvs] = useState<any[]>([])
   const [open, setOpen] = useState(false)
@@ -69,16 +72,26 @@ export default function ChatList() {
         <EmptyState icon={<MessageCircle />} title="No conversations yet" hint="Tap + and enter a friend's username to start chatting." />
       ) : (
         <div className="space-y-2">
-          {convs.map((c) => {
+          {[...convs].sort((a, b) => (pinned.includes(b.id) ? 1 : 0) - (pinned.includes(a.id) ? 1 : 0)).map((c) => {
             const otherUid = (c.members || []).find((m: string) => m !== user.uid)
             const name = c.memberNames?.[otherUid] || 'User'
+            const isPinned = pinned.includes(c.id)
             return (
-              <button key={c.id} onClick={() => nav(`/chat/${c.id}`)} className="flex w-full items-center gap-3 rounded-xl2 bg-card border border-line/60 p-3 text-left">
+              <button
+                key={c.id}
+                onClick={() => nav(`/chat/${c.id}`)}
+                onContextMenu={(e) => { e.preventDefault(); togglePinChat(c.id) }}
+                onTouchStart={() => { pressTimer.current = setTimeout(() => togglePinChat(c.id), 500) }}
+                onTouchEnd={() => clearTimeout(pressTimer.current)}
+                onTouchMove={() => clearTimeout(pressTimer.current)}
+                className="flex w-full items-center gap-3 rounded-xl2 bg-card border border-line/60 p-3 text-left"
+              >
                 <div className="grid h-12 w-12 place-items-center rounded-2xl bg-brand/20 text-lg font-bold text-brand">{name[0]?.toUpperCase()}</div>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold">{name}</p>
                   <p className="truncate text-sm text-muted">{c.lastText || 'Say hi 👋'}</p>
                 </div>
+                {isPinned && <Pin size={15} className="text-brand" fill="currentColor" />}
               </button>
             )
           })}

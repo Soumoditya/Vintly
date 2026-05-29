@@ -93,6 +93,7 @@ interface VintlyState {
   settings: Settings
   steps: { day: string; count: number }
   bestScores: Record<string, number>
+  pinnedChats: string[]
 
   // profile
   setProfile: (p: Partial<Profile>) => void
@@ -130,6 +131,9 @@ interface VintlyState {
 
   // games
   setBest: (game: string, score: number) => void
+
+  // chat
+  togglePinChat: (cid: string) => void
 }
 
 const todayKey = () => new Date().toISOString().slice(0, 10)
@@ -166,6 +170,7 @@ export const useStore = create<VintlyState>()(
       },
       steps: { day: todayKey(), count: 0 },
       bestScores: {},
+      pinnedChats: [],
 
       setProfile: (p) => set((s) => ({ profile: { ...s.profile, ...p } })),
 
@@ -298,6 +303,13 @@ export const useStore = create<VintlyState>()(
       setBest: (game, score) =>
         set((s) => ({
           bestScores: { ...s.bestScores, [game]: Math.max(s.bestScores?.[game] || 0, score) },
+        })),
+
+      togglePinChat: (cid) =>
+        set((s) => ({
+          pinnedChats: (s.pinnedChats || []).includes(cid)
+            ? s.pinnedChats.filter((c) => c !== cid)
+            : [...(s.pinnedChats || []), cid],
         })),
     }),
     {
