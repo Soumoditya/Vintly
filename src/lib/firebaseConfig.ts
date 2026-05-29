@@ -11,13 +11,13 @@
 //   • Build → Firestore Database → Create database → Start in *test mode*.
 
 export const firebaseConfig = {
-  apiKey: 'AIzaSyBvFF70OqRN-N9jhN8TLTCgx6j76yoxdNs',
+  apiKey: 'AIzaSyBvFF70OqRN-N9jhN8TLTCgx6j7GyoxdNs',
   authDomain: 'vintlyy.firebaseapp.com',
   projectId: 'vintlyy',
   storageBucket: 'vintlyy.firebasestorage.app',
   messagingSenderId: '1085757864702',
   appId: '1:1085757864702:web:e61c8ffcd818301a1f43af',
-  measurementId: 'G-NTL7PY9JO1',
+  measurementId: 'G-NTL7PY9J01',
 }
 
 export const isFirebaseConfigured =
