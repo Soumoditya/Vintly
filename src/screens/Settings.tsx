@@ -13,7 +13,11 @@ import { syncEngagementNudges } from '../lib/engagement'
 const THEMES: { id: ThemeName; label: string; swatch: string }[] = [
   { id: 'midnight', label: 'Midnight', swatch: '#0b0f1a' },
   { id: 'ocean', label: 'Ocean', swatch: '#08121c' },
+  { id: 'forest', label: 'Forest', swatch: '#0a1410' },
   { id: 'mocha', label: 'Mocha', swatch: '#181210' },
+  { id: 'rose', label: 'Rose', swatch: '#1a0e12' },
+  { id: 'grape', label: 'Grape', swatch: '#140e1e' },
+  { id: 'slate', label: 'Slate', swatch: '#101216' },
   { id: 'light', label: 'Light', swatch: '#f5f7fb' },
 ]
 
@@ -70,6 +74,16 @@ export default function Settings() {
               <span className="text-xs">{t.label}</span>
             </button>
           ))}
+        </div>
+        {/* Custom theme background */}
+        <div className="mt-3 flex items-center gap-2 border-t border-line pt-3">
+          <span className={`grid h-9 w-9 place-items-center rounded-2xl border-2 ${settings.theme === 'custom' ? 'border-brand' : 'border-line'}`} style={{ background: `rgb(${settings.customBg})` }}>
+            {settings.theme === 'custom' && <Check size={14} />}
+          </span>
+          <span className="flex-1 text-sm">Custom background</span>
+          <input type="color" value={'#' + settings.customBg.split(' ').map((n) => (+n).toString(16).padStart(2, '0')).join('')}
+            onChange={(e) => { const t = hexToRgbTriple(e.target.value); if (t) setSettings({ customBg: t, theme: 'custom' }) }}
+            className="h-9 w-12 rounded-xl bg-transparent" />
         </div>
       </Card>
 

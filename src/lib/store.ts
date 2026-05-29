@@ -65,6 +65,7 @@ export interface Profile {
 export interface Settings {
   theme: ThemeName
   accent: string // rgb triple
+  customBg: string // rgb triple for custom theme background
   chatWallpaper: string // css value or ''
   hapticsEnabled: boolean
   stepGoal: number
@@ -154,6 +155,7 @@ export const useStore = create<VintlyState>()(
       settings: {
         theme: 'midnight',
         accent: '124 92 255',
+        customBg: '18 16 28',
         chatWallpaper: '',
         hapticsEnabled: true,
         stepGoal: 8000,
@@ -285,7 +287,7 @@ export const useStore = create<VintlyState>()(
       setSettings: (s) => {
         set((state) => ({ settings: { ...state.settings, ...s } }))
         const ns = get().settings
-        applyTheme(ns.theme, ns.accent)
+        applyTheme(ns.theme, ns.accent, ns.customBg)
       },
 
       setSteps: (count) => {
@@ -318,9 +320,10 @@ export const useStore = create<VintlyState>()(
           streakReminderTime: '20:00',
           morningNudge: true,
           morningNudgeTime: '09:00',
+          customBg: '18 16 28',
           ...state.settings,
         }
-        applyTheme(state.settings.theme, state.settings.accent)
+        applyTheme(state.settings.theme, state.settings.accent, state.settings.customBg)
       },
     },
   ),

@@ -5,8 +5,8 @@ import { scheduleReminder, cancelReminder, ensureNotificationPermission } from '
 import type { Settings } from './store'
 
 const BASE_ID = 910100
-// Daytime hours to nudge at (~every 2 hours).
-const HOURS = [9, 11, 13, 15, 17, 19, 21]
+// Daytime hours to nudge at (every hour, 8am–10pm).
+const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
 
 const LINES = [
   '🔥 Keep your streak alive — finish one task!',

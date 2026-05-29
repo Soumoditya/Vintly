@@ -8,6 +8,7 @@ import { useStore } from '../lib/store'
 import { Sheet, Input, Button } from '../components/ui'
 import { scheduleReminder, ensureNotificationPermission } from '../lib/notifications'
 import { holidaysOn } from '../lib/holidays'
+import { hexToRgbTriple } from '../lib/theme'
 
 const EVENT_COLORS = ['124 92 255', '16 185 129', '244 63 94', '245 158 11', '14 165 233']
 
@@ -149,10 +150,14 @@ export default function CalendarScreen() {
             <Clock size={18} className="text-muted" />
             <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="rounded-2xl bg-surface border border-line px-4 py-3 text-ink" />
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             {EVENT_COLORS.map((c) => (
               <button key={c} onClick={() => setColor(c)} className={`h-8 w-8 rounded-full border-2 ${color === c ? 'border-ink' : 'border-transparent'}`} style={{ background: `rgb(${c})` }} />
             ))}
+            <label className="grid h-8 w-8 cursor-pointer place-items-center rounded-full border-2 border-dashed border-line text-xs text-muted">
+              +
+              <input type="color" className="absolute h-0 w-0 opacity-0" onChange={(e) => { const t = hexToRgbTriple(e.target.value); if (t) setColor(t) }} />
+            </label>
           </div>
           <label className="flex items-center justify-between rounded-2xl bg-surface px-4 py-3">
             <span className="text-sm">Remind me 10 min before</span>
