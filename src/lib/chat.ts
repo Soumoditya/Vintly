@@ -12,8 +12,8 @@ import {
   serverTimestamp,
   limit,
 } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { getFb } from './firebase'
+import { uploadToCloudinary } from './cloudinary'
 
 export type MsgKind = 'text' | 'image' | 'gif' | 'voice' | 'file'
 
@@ -121,11 +121,10 @@ export async function sendMessage(
   )
 }
 
-export async function uploadMedia(cid: string, file: Blob, ext: string): Promise<string> {
-  const fb = getFb()
-  if (!fb) throw new Error('offline')
-  const path = `chat/${cid}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-  const r = ref(fb.storage, path)
-  await uploadBytes(r, file)
-  return getDownloadURL(r)
+export async function uploadMedia(_cid: string, file: Blob, ext: string): Promise<string> {
+  // Media goes to Cloudinary (free); 'auto' lets it detect image/video/audio.
+  const isImg = /^(png|jpe?g|gif|webp|heic|bmp)$/i.test(ext)
+  const isAv = /^(mp4|mov|webm|m4a|mp3|ogg|wav|aac)$/i.test(ext)
+  const type = isImg ? 'image' : isAv ? 'video' : ('auto' as any)
+  return uploadToCloudinary(file, type)
 }

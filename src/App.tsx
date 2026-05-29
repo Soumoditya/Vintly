@@ -9,6 +9,7 @@ import CalendarScreen from './screens/Calendar'
 import ChatList from './screens/ChatList'
 import ChatRoom from './screens/ChatRoom'
 import Fitness from './screens/Fitness'
+import Reminders from './screens/Reminders'
 import Profile from './screens/Profile'
 import Settings from './screens/Settings'
 import Auth from './screens/Auth'
@@ -37,6 +38,7 @@ export default function App() {
         <Route path="/chat" element={<ChatList />} />
         <Route path="/chat/:cid" element={<ChatRoom />} />
         <Route path="/fitness" element={<Fitness />} />
+        <Route path="/reminders" element={<Reminders />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/auth" element={<Auth />} />
