@@ -27,6 +27,10 @@ export interface Note {
   isChecklist: boolean
   checklist: ChecklistItem[]
   labels: string[]
+  font: string // '', 'serif', 'mono', 'rounded'
+  bg: string // background pattern key for the note
+  trashed: boolean
+  trashedAt?: number
   updatedAt: number
 }
 
@@ -47,6 +51,7 @@ export interface Reminder {
   notifId?: number
   repeat: 'none' | 'daily' | 'weekly'
   done: boolean
+  alarm?: boolean
 }
 
 export interface Profile {
@@ -60,9 +65,14 @@ export interface Profile {
 export interface Settings {
   theme: ThemeName
   accent: string // rgb triple
+  customBg: string // rgb triple for custom theme background
   chatWallpaper: string // css value or ''
   hapticsEnabled: boolean
   stepGoal: number
+  streakReminder: boolean
+  streakReminderTime: string // 'HH:MM'
+  morningNudge: boolean
+  morningNudgeTime: string
 }
 
 interface Engagement {
@@ -82,6 +92,8 @@ interface VintlyState {
   engagement: Engagement
   settings: Settings
   steps: { day: string; count: number }
+  bestScores: Record<string, number>
+  pinnedChats: string[]
 
   // profile
   setProfile: (p: Partial<Profile>) => void
@@ -96,6 +108,8 @@ interface VintlyState {
   addNote: (n: Partial<Note>) => string
   updateNote: (id: string, patch: Partial<Note>) => void
   deleteNote: (id: string) => void
+  trashNote: (id: string) => void
+  restoreNote: (id: string) => void
 
   // events
   addEvent: (e: Partial<CalEvent>) => void
@@ -114,6 +128,12 @@ interface VintlyState {
 
   // fitness
   setSteps: (count: number) => void
+
+  // games
+  setBest: (game: string, score: number) => void
+
+  // chat
+  togglePinChat: (cid: string) => void
 }
 
 const todayKey = () => new Date().toISOString().slice(0, 10)
@@ -139,11 +159,18 @@ export const useStore = create<VintlyState>()(
       settings: {
         theme: 'midnight',
         accent: '124 92 255',
+        customBg: '18 16 28',
         chatWallpaper: '',
         hapticsEnabled: true,
         stepGoal: 8000,
+        streakReminder: true,
+        streakReminderTime: '20:00',
+        morningNudge: true,
+        morningNudgeTime: '09:00',
       },
       steps: { day: todayKey(), count: 0 },
+      bestScores: {},
+      pinnedChats: [],
 
       setProfile: (p) => set((s) => ({ profile: { ...s.profile, ...p } })),
 
@@ -199,6 +226,9 @@ export const useStore = create<VintlyState>()(
               isChecklist: n.isChecklist ?? false,
               checklist: n.checklist ?? [],
               labels: n.labels ?? [],
+              font: n.font ?? '',
+              bg: n.bg ?? '',
+              trashed: false,
               updatedAt: Date.now(),
             },
             ...s.notes,
@@ -211,6 +241,10 @@ export const useStore = create<VintlyState>()(
           notes: s.notes.map((n) => (n.id === id ? { ...n, ...patch, updatedAt: Date.now() } : n)),
         })),
       deleteNote: (id) => set((s) => ({ notes: s.notes.filter((n) => n.id !== id) })),
+      trashNote: (id) =>
+        set((s) => ({ notes: s.notes.map((n) => (n.id === id ? { ...n, trashed: true, trashedAt: Date.now(), pinned: false } : n)) })),
+      restoreNote: (id) =>
+        set((s) => ({ notes: s.notes.map((n) => (n.id === id ? { ...n, trashed: false, trashedAt: undefined } : n)) })),
 
       addEvent: (e) =>
         set((s) => ({
@@ -258,13 +292,25 @@ export const useStore = create<VintlyState>()(
       setSettings: (s) => {
         set((state) => ({ settings: { ...state.settings, ...s } }))
         const ns = get().settings
-        applyTheme(ns.theme, ns.accent)
+        applyTheme(ns.theme, ns.accent, ns.customBg)
       },
 
       setSteps: (count) => {
         const day = todayKey()
         set((s) => ({ steps: { day, count: s.steps.day === day ? count : count } }))
       },
+
+      setBest: (game, score) =>
+        set((s) => ({
+          bestScores: { ...s.bestScores, [game]: Math.max(s.bestScores?.[game] || 0, score) },
+        })),
+
+      togglePinChat: (cid) =>
+        set((s) => ({
+          pinnedChats: (s.pinnedChats || []).includes(cid)
+            ? s.pinnedChats.filter((c) => c !== cid)
+            : [...(s.pinnedChats || []), cid],
+        })),
     }),
     {
       name: 'vintly-store-v1',
@@ -276,9 +322,20 @@ export const useStore = create<VintlyState>()(
           isChecklist: false,
           checklist: [],
           labels: [],
+          font: '',
+          bg: '',
+          trashed: false,
           ...n,
         }))
-        applyTheme(state.settings.theme, state.settings.accent)
+        state.settings = {
+          streakReminder: true,
+          streakReminderTime: '20:00',
+          morningNudge: true,
+          morningNudgeTime: '09:00',
+          customBg: '18 16 28',
+          ...state.settings,
+        }
+        applyTheme(state.settings.theme, state.settings.accent, state.settings.customBg)
       },
     },
   ),

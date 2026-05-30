@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Plus, Trash2, Bell, AlarmClock, Repeat, Zap } from 'lucide-react'
+import { ringAlarm } from '../lib/alarm'
 import { useStore } from '../lib/store'
 import { Card, Button, Sheet, Input } from '../components/ui'
 import { scheduleReminder, cancelReminder, ensureNotificationPermission, notifyNow } from '../lib/notifications'
@@ -15,14 +16,16 @@ export default function Reminders() {
   const [date, setDate] = useState(today.toISOString().slice(0, 10))
   const [time, setTime] = useState(new Date(Date.now() + 5 * 60000).toTimeString().slice(0, 5))
   const [repeat, setRepeat] = useState<'none' | 'daily' | 'weekly'>('none')
+  const [alarm, setAlarm] = useState(true)
 
   const upcoming = [...reminders].sort((a, b) => a.at - b.at)
 
   async function save() {
     if (!title.trim()) return
     const at = new Date(`${date}T${time}`)
-    const notifId = await scheduleReminder({ title: '⏰ ' + title.trim(), body: 'Reminder from Vintly', at, repeat })
-    addReminder({ id: uid(), title: title.trim(), at: at.getTime(), notifId, repeat, done: false })
+    const prefix = alarm ? '⏰ ' : '🔔 '
+    const notifId = await scheduleReminder({ title: prefix + title.trim(), body: alarm ? 'Alarm' : 'Reminder from Vintly', at, repeat })
+    addReminder({ id: uid(), title: title.trim(), at: at.getTime(), notifId, repeat, done: false, alarm })
     setTitle('')
     setOpen(false)
   }
@@ -46,13 +49,18 @@ export default function Reminders() {
         <h1 className="text-3xl font-extrabold tracking-tight">Reminders</h1>
       </div>
 
-      <Card className="mb-4 flex items-center gap-3 bg-gradient-to-br from-brand/20 to-transparent">
-        <Zap className="text-amber-400" />
-        <div className="flex-1">
-          <p className="font-semibold">Test notifications</p>
-          <p className="text-sm text-muted">Make sure alarms work on your phone.</p>
+      <Card className="mb-4 bg-gradient-to-br from-brand/20 to-transparent">
+        <div className="flex items-center gap-3">
+          <Zap className="text-amber-400" />
+          <div className="flex-1">
+            <p className="font-semibold">Test it out</p>
+            <p className="text-sm text-muted">Check notifications & the alarm ringer.</p>
+          </div>
         </div>
-        <Button variant="soft" onClick={testNow}>Test</Button>
+        <div className="mt-3 flex gap-2">
+          <Button variant="ghost" className="flex-1" onClick={testNow}>Notify (10s)</Button>
+          <Button variant="soft" className="flex-1" onClick={() => ringAlarm('test')}>Ring alarm now</Button>
+        </div>
       </Card>
 
       {upcoming.length === 0 ? (
@@ -99,7 +107,11 @@ export default function Reminders() {
               <button key={r} onClick={() => setRepeat(r)} className={`rounded-full px-3.5 py-1.5 text-sm font-semibold capitalize ${repeat === r ? 'bg-brand/20 text-brand' : 'bg-surface text-muted'}`}>{r}</button>
             ))}
           </div>
-          <Button onClick={save} className="w-full">Set reminder</Button>
+          <label className="flex items-center justify-between rounded-2xl bg-surface px-4 py-3">
+            <span className="flex items-center gap-2 text-sm font-medium"><AlarmClock size={16} className="text-brand" /> Ring as alarm</span>
+            <input type="checkbox" checked={alarm} onChange={(e) => setAlarm(e.target.checked)} className="h-5 w-5 accent-[rgb(var(--brand))]" />
+          </label>
+          <Button onClick={save} className="w-full">{alarm ? 'Set alarm' : 'Set reminder'}</Button>
         </div>
       </Sheet>
     </div>

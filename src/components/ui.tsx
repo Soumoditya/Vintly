@@ -84,6 +84,19 @@ export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
   )
 }
 
+// Renders an avatar that is either an uploaded image URL or an emoji.
+export function Avatar({ value, size = 48, className = '' }: { value: string; size?: number; className?: string }) {
+  const isImg = /^https?:\/\//.test(value)
+  return (
+    <span
+      className={`grid shrink-0 place-items-center overflow-hidden rounded-3xl bg-brand/20 ${className}`}
+      style={{ width: size, height: size, fontSize: size * 0.5 }}
+    >
+      {isImg ? <img src={value} alt="" className="h-full w-full object-cover" /> : value}
+    </span>
+  )
+}
+
 export function EmptyState({ icon, title, hint }: { icon: React.ReactNode; title: string; hint?: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">

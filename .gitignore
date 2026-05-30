@@ -7,7 +7,9 @@ dist
 android
 .gradle
 local.properties
+# Stable signing key is intentionally committed so APK updates install in place.
 *.keystore
+!vintly-debug.keystore
 
 # Env
 .env

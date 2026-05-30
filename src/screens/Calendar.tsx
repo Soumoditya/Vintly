@@ -1,12 +1,14 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths,
   isSameMonth, isSameDay, format,
 } from 'date-fns'
-import { ChevronLeft, ChevronRight, Plus, Trash2, Clock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Trash2, Clock, PartyPopper, Landmark } from 'lucide-react'
 import { useStore } from '../lib/store'
 import { Sheet, Input, Button } from '../components/ui'
-import { scheduleReminder } from '../lib/notifications'
+import { scheduleReminder, ensureNotificationPermission } from '../lib/notifications'
+import { holidaysOn } from '../lib/holidays'
+import { hexToRgbTriple } from '../lib/theme'
 
 const EVENT_COLORS = ['124 92 255', '16 185 129', '244 63 94', '245 158 11', '14 165 233']
 
@@ -19,6 +21,21 @@ export default function CalendarScreen() {
   const [time, setTime] = useState('09:00')
   const [color, setColor] = useState(EVENT_COLORS[0])
   const [remind, setRemind] = useState(true)
+  const [dir, setDir] = useState<'next' | 'prev'>('next')
+  const swipe = useRef<{ x: number; y: number } | null>(null)
+
+  function changeMonth(delta: number) {
+    setDir(delta > 0 ? 'next' : 'prev')
+    setCursor((c) => addMonths(c, delta))
+  }
+  function onTouchStart(e: React.TouchEvent) { swipe.current = { x: e.touches[0].clientX, y: e.touches[0].clientY } }
+  function onTouchEnd(e: React.TouchEvent) {
+    if (!swipe.current) return
+    const dx = e.changedTouches[0].clientX - swipe.current.x
+    const dy = e.changedTouches[0].clientY - swipe.current.y
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) changeMonth(dx < 0 ? 1 : -1)
+    swipe.current = null
+  }
 
   const monthStart = startOfMonth(cursor)
   const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 })
@@ -37,10 +54,13 @@ export default function CalendarScreen() {
     dt.setHours(h, m, 0, 0)
     addEvent({ title: title.trim(), date: dt.getTime(), color, remindMinsBefore: remind ? 10 : undefined })
     if (remind) {
+      await ensureNotificationPermission()
+      // Remind 10 min before — or right at start time if the event is very soon.
+      const remindAt = dt.getTime() - 10 * 60000 > Date.now() ? new Date(dt.getTime() - 10 * 60000) : dt
       await scheduleReminder({
-        title: `Upcoming: ${title.trim()}`,
+        title: `📅 ${title.trim()}`,
         body: `Starts at ${format(dt, 'p')}`,
-        at: new Date(dt.getTime() - 10 * 60000),
+        at: remindAt,
       })
     }
     setTitle('')
@@ -52,17 +72,24 @@ export default function CalendarScreen() {
       <div className="flex items-center justify-between pt-5 pb-4">
         <h1 className="text-2xl font-extrabold tracking-tight">{format(cursor, 'MMMM yyyy')}</h1>
         <div className="flex gap-1">
-          <button onClick={() => setCursor(addMonths(cursor, -1))} className="grid h-10 w-10 place-items-center rounded-2xl bg-card border border-line"><ChevronLeft size={18} /></button>
-          <button onClick={() => setCursor(addMonths(cursor, 1))} className="grid h-10 w-10 place-items-center rounded-2xl bg-card border border-line"><ChevronRight size={18} /></button>
+          <button onClick={() => changeMonth(-1)} className="grid h-10 w-10 place-items-center rounded-2xl bg-card border border-line"><ChevronLeft size={18} /></button>
+          <button onClick={() => changeMonth(1)} className="grid h-10 w-10 place-items-center rounded-2xl bg-card border border-line"><ChevronRight size={18} /></button>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted">
-        {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => <div key={i} className="py-1">{d}</div>)}
-      </div>
-      <div className="grid grid-cols-7 gap-1">
+      <div
+        key={format(cursor, 'yyyy-MM')}
+        className={`rounded-3xl ${dir === 'next' ? 'page-next' : 'page-prev'}`}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
+        <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted">
+          {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => <div key={i} className="py-1">{d}</div>)}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
         {days.map((d) => {
           const has = events.some((e) => isSameDay(new Date(e.date), d))
+          const hol = holidaysOn(d)
           const isSel = isSameDay(d, selected)
           const isToday = isSameDay(d, new Date())
           return (
@@ -70,14 +97,20 @@ export default function CalendarScreen() {
               key={d.toISOString()}
               onClick={() => setSelected(d)}
               className={`relative aspect-square rounded-2xl text-sm transition ${
-                isSel ? 'bg-brand text-white font-bold' : isToday ? 'bg-brand/15 text-brand' : isSameMonth(d, cursor) ? 'text-ink' : 'text-muted/40'
+                isSel ? 'bg-brand text-white font-bold' : isToday ? 'bg-brand/15 text-brand' : hol.length && isSameMonth(d, cursor) ? 'text-amber-400 font-semibold' : isSameMonth(d, cursor) ? 'text-ink' : 'text-muted/40'
               }`}
             >
               {format(d, 'd')}
-              {has && !isSel && <span className="absolute bottom-1.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-brand" />}
+              {!isSel && (has || hol.length > 0) && (
+                <span className="absolute bottom-1.5 left-1/2 flex -translate-x-1/2 gap-0.5">
+                  {has && <span className="h-1 w-1 rounded-full bg-brand" />}
+                  {hol.length > 0 && <span className="h-1 w-1 rounded-full bg-amber-400" />}
+                </span>
+              )}
             </button>
           )
         })}
+        </div>
       </div>
 
       <div className="mt-5 mb-2 flex items-center justify-between">
@@ -86,7 +119,18 @@ export default function CalendarScreen() {
       </div>
 
       <div className="space-y-2">
-        {dayEvents.length === 0 && <p className="py-6 text-center text-sm text-muted">No events. Add one to plan your day.</p>}
+        {holidaysOn(selected).map((h, i) => (
+          <div key={i} className="flex items-center gap-3 rounded-xl2 border border-amber-400/30 bg-amber-400/10 p-3">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-amber-400/20 text-amber-400">
+              {h.type === 'national' ? <Landmark size={17} /> : <PartyPopper size={17} />}
+            </span>
+            <div className="flex-1">
+              <p className="font-medium">{h.name}</p>
+              <p className="text-xs text-muted">{h.type === 'national' ? 'Public holiday' : 'Festival'}</p>
+            </div>
+          </div>
+        ))}
+        {dayEvents.length === 0 && holidaysOn(selected).length === 0 && <p className="py-6 text-center text-sm text-muted">No events. Add one to plan your day.</p>}
         {dayEvents.map((e) => (
           <div key={e.id} className="flex items-center gap-3 rounded-xl2 bg-card border border-line/60 p-3 animate-fade-up">
             <span className="h-10 w-1.5 rounded-full" style={{ background: `rgb(${e.color})` }} />
@@ -106,10 +150,14 @@ export default function CalendarScreen() {
             <Clock size={18} className="text-muted" />
             <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="rounded-2xl bg-surface border border-line px-4 py-3 text-ink" />
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             {EVENT_COLORS.map((c) => (
               <button key={c} onClick={() => setColor(c)} className={`h-8 w-8 rounded-full border-2 ${color === c ? 'border-ink' : 'border-transparent'}`} style={{ background: `rgb(${c})` }} />
             ))}
+            <label className="grid h-8 w-8 cursor-pointer place-items-center rounded-full border-2 border-dashed border-line text-xs text-muted">
+              +
+              <input type="color" className="absolute h-0 w-0 opacity-0" onChange={(e) => { const t = hexToRgbTriple(e.target.value); if (t) setColor(t) }} />
+            </label>
           </div>
           <label className="flex items-center justify-between rounded-2xl bg-surface px-4 py-3">
             <span className="text-sm">Remind me 10 min before</span>

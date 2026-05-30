@@ -8,14 +8,19 @@ import {
   addDoc,
   doc,
   setDoc,
+  getDoc,
   getDocs,
+  updateDoc,
+  deleteDoc,
   serverTimestamp,
   limit,
 } from 'firebase/firestore'
 import { getFb } from './firebase'
 import { uploadToCloudinary } from './cloudinary'
 
-export type MsgKind = 'text' | 'image' | 'gif' | 'voice' | 'file'
+export type MsgKind = 'text' | 'image' | 'gif' | 'voice' | 'file' | 'video'
+
+export interface ReplyRef { id: string; snippet: string; from: string }
 
 export interface Message {
   id: string
@@ -23,6 +28,8 @@ export interface Message {
   kind: MsgKind
   text?: string
   mediaUrl?: string
+  reactions?: Record<string, string>
+  replyTo?: ReplyRef
   createdAt: number
 }
 
@@ -69,12 +76,14 @@ export async function ensureConversation(me: ChatUser, other: ChatUser) {
 export function listenConversations(uid: string, cb: (rows: any[]) => void) {
   const fb = getFb()
   if (!fb) return () => {}
-  const q = query(
-    collection(fb.db, 'conversations'),
-    where('members', 'array-contains', uid),
-    orderBy('updatedAt', 'desc'),
-  )
-  return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))))
+  // No orderBy here — combining array-contains with orderBy needs a composite
+  // index (which silently returns nothing if missing). Sort on the client.
+  const q = query(collection(fb.db, 'conversations'), where('members', 'array-contains', uid))
+  return onSnapshot(q, (snap) => {
+    const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+    rows.sort((a: any, b: any) => (b.updatedAt?.toMillis?.() ?? 0) - (a.updatedAt?.toMillis?.() ?? 0))
+    cb(rows)
+  })
 }
 
 export function listenMessages(cid: string, cb: (msgs: Message[]) => void) {
@@ -95,6 +104,8 @@ export function listenMessages(cid: string, cb: (msgs: Message[]) => void) {
           kind: data.kind,
           text: data.text,
           mediaUrl: data.mediaUrl,
+          reactions: data.reactions || {},
+          replyTo: data.replyTo || undefined,
           createdAt: data.createdAt?.toMillis?.() ?? Date.now(),
         }
       }),
@@ -105,20 +116,75 @@ export function listenMessages(cid: string, cb: (msgs: Message[]) => void) {
 export async function sendMessage(
   cid: string,
   from: string,
-  payload: { kind: MsgKind; text?: string; mediaUrl?: string },
+  payload: { kind: MsgKind; text?: string; mediaUrl?: string; replyTo?: ReplyRef },
 ) {
   const fb = getFb()
   if (!fb) return
-  await addDoc(collection(fb.db, 'conversations', cid, 'messages'), {
-    from,
-    ...payload,
-    createdAt: serverTimestamp(),
-  })
+  const clean: any = { from, kind: payload.kind, createdAt: serverTimestamp() }
+  if (payload.text != null) clean.text = payload.text
+  if (payload.mediaUrl != null) clean.mediaUrl = payload.mediaUrl
+  if (payload.replyTo) clean.replyTo = payload.replyTo
+  await addDoc(collection(fb.db, 'conversations', cid, 'messages'), clean)
   await setDoc(
     doc(fb.db, 'conversations', cid),
     { updatedAt: serverTimestamp(), lastText: payload.text || `[${payload.kind}]` },
     { merge: true },
   )
+}
+
+// ---- presence, typing & read receipts ----
+export async function setTyping(cid: string, uid: string, isTyping: boolean) {
+  const fb = getFb()
+  if (!fb) return
+  await setDoc(doc(fb.db, 'conversations', cid), { typing: { [uid]: isTyping ? Date.now() : 0 } }, { merge: true })
+}
+
+export async function markRead(cid: string, uid: string) {
+  const fb = getFb()
+  if (!fb) return
+  await setDoc(doc(fb.db, 'conversations', cid), { lastRead: { [uid]: Date.now() } }, { merge: true })
+}
+
+export function listenConversation(cid: string, cb: (data: any) => void) {
+  const fb = getFb()
+  if (!fb) return () => {}
+  return onSnapshot(doc(fb.db, 'conversations', cid), (snap) => cb(snap.data() || {}))
+}
+
+export async function heartbeat(uid: string) {
+  const fb = getFb()
+  if (!fb) return
+  await setDoc(doc(fb.db, 'users', uid), { lastSeen: Date.now() }, { merge: true })
+}
+
+export function listenPresence(uid: string, cb: (lastSeen: number) => void) {
+  const fb = getFb()
+  if (!fb) return () => {}
+  return onSnapshot(doc(fb.db, 'users', uid), (snap) => cb((snap.data() as any)?.lastSeen || 0))
+}
+
+export async function getConversation(cid: string): Promise<any | null> {
+  const fb = getFb()
+  if (!fb) return null
+  const snap = await getDoc(doc(fb.db, 'conversations', cid))
+  return snap.exists() ? snap.data() : null
+}
+
+export async function toggleReaction(cid: string, msgId: string, uid: string, emoji: string) {
+  const fb = getFb()
+  if (!fb) return
+  const ref = doc(fb.db, 'conversations', cid, 'messages', msgId)
+  const snap = await getDoc(ref)
+  const reactions = { ...(snap.data()?.reactions || {}) }
+  if (reactions[uid] === emoji) delete reactions[uid]
+  else reactions[uid] = emoji
+  await updateDoc(ref, { reactions })
+}
+
+export async function deleteMessage(cid: string, msgId: string) {
+  const fb = getFb()
+  if (!fb) return
+  await deleteDoc(doc(fb.db, 'conversations', cid, 'messages', msgId))
 }
 
 export async function uploadMedia(_cid: string, file: Blob, ext: string): Promise<string> {
