@@ -10,6 +10,7 @@ import { useStore } from '../lib/store'
 import { trendingGifs, searchGifs, type Gif } from '../lib/gif'
 
 const REACTIONS = ['❤️', '😂', '👍', '😮', '😢', '🙏']
+const MORE_EMOJI = ['🔥', '😍', '🥰', '😎', '🤩', '😭', '😡', '👏', '🙌', '💯', '✨', '🎉', '😅', '🤔', '😴', '🤮', '💀', '👀', '🫶', '🤝', '😘', '🥳', '😇', '🤯']
 const snippet = (m: Message) => m.kind === 'text' ? (m.text || '') : `[${m.kind}]`
 
 export default function ChatRoom() {
@@ -27,7 +28,10 @@ export default function ChatRoom() {
   const [gifs, setGifs] = useState<Gif[]>([])
   const [gifQuery, setGifQuery] = useState('')
   const [recording, setRecording] = useState(false)
+  const [recDur, setRecDur] = useState(0)
+  const durTimer = useRef<any>(null)
   const [active, setActive] = useState<Message | null>(null)
+  const [moreReact, setMoreReact] = useState(false)
   const [viewer, setViewer] = useState<{ url: string; video: boolean } | null>(null)
   const [zoom, setZoom] = useState(false)
   const [reply, setReply] = useState<ReplyRef | null>(null)
@@ -45,7 +49,7 @@ export default function ChatRoom() {
       if (c?.memberNames) {
         const o = (c.members || []).find((m: string) => m !== user.uid)
         setOtherUid(o || '')
-        setName(c.memberNames[o] || 'Conversation')
+        setName(o ? (c.memberNames[o] || 'Conversation') : 'Saved messages')
       }
     })
     const u1 = listenMessages(cid, (m) => { setMsgs(m); markRead(cid, user.uid) })
@@ -91,7 +95,7 @@ export default function ChatRoom() {
     if (!f || !user) return
     const ext = (f.name.split('.').pop() || 'bin').toLowerCase()
     const url = await uploadMedia(cid, f, ext)
-    const kind = f.type.startsWith('image/') ? 'image' : f.type.startsWith('video/') ? 'video' : 'file'
+    const kind = f.type.startsWith('image/') ? 'image' : f.type.startsWith('video/') ? 'video' : f.type.startsWith('audio/') ? 'voice' : 'file'
     await sendMessage(cid, user.uid, { kind, mediaUrl: url, text: kind === 'file' ? f.name : undefined, replyTo: reply || undefined })
     setReply(null)
     e.target.value = ''
@@ -100,19 +104,28 @@ export default function ChatRoom() {
     if (recording) { recRef.current?.stop(); setRecording(false); return }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const rec = new MediaRecorder(stream)
+      // Pick a mime type the device actually supports.
+      const types = ['audio/webm', 'audio/mp4', 'audio/ogg', 'audio/aac', '']
+      const mime = types.find((t) => !t || (window.MediaRecorder && MediaRecorder.isTypeSupported(t))) || ''
+      const ext = mime.includes('mp4') ? 'm4a' : mime.includes('ogg') ? 'ogg' : mime.includes('aac') ? 'aac' : 'webm'
+      const rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream)
       chunksRef.current = []
-      rec.ondataavailable = (ev) => chunksRef.current.push(ev.data)
+      rec.ondataavailable = (ev) => { if (ev.data.size) chunksRef.current.push(ev.data) }
       rec.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop())
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+        clearInterval(durTimer.current)
+        const blob = new Blob(chunksRef.current, { type: mime || 'audio/webm' })
         if (user && blob.size > 0) {
-          const url = await uploadMedia(cid, blob, 'webm')
-          await sendMessage(cid, user.uid, { kind: 'voice', mediaUrl: url })
+          try {
+            const url = await uploadMedia(cid, blob, ext)
+            await sendMessage(cid, user.uid, { kind: 'voice', mediaUrl: url, replyTo: reply || undefined })
+            setReply(null)
+          } catch { alert('Could not upload voice note. Check connection / Cloudinary setup.') }
         }
       }
-      rec.start(); recRef.current = rec; setRecording(true)
-    } catch { alert('Microphone permission needed for voice messages.') }
+      rec.start(); recRef.current = rec; setRecording(true); setRecDur(0)
+      durTimer.current = setInterval(() => setRecDur((d) => d + 1), 1000)
+    } catch { alert('Microphone permission needed for voice messages. Allow it in your phone settings.') }
   }
   async function searchGif() { setGifs(await searchGifs(gifQuery)) }
 
@@ -155,7 +168,7 @@ export default function ChatRoom() {
           const reactArr = Object.values(m.reactions || {})
           const read = mine && otherRead >= m.createdAt
           return (
-            <div key={m.id} className={`flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
+            <div key={m.id} id={`msg-${m.id}`} className={`flex flex-col transition-colors ${mine ? 'items-end' : 'items-start'}`}>
               <div
                 className={`relative max-w-[80%] rounded-2xl px-3 py-2 text-sm transition-transform ${mine ? 'bg-brand text-white rounded-br-md' : 'bg-card border border-line/60 rounded-bl-md'}`}
                 onContextMenu={(e) => { e.preventDefault(); setActive(m) }}
@@ -164,9 +177,16 @@ export default function ChatRoom() {
                 onTouchEnd={(e) => swipeEnd(e, m)}
               >
                 {m.replyTo && (
-                  <div className={`mb-1 rounded-lg border-l-2 px-2 py-1 text-xs ${mine ? 'border-white/60 bg-white/10' : 'border-brand bg-brand/10'}`}>
-                    <span className="opacity-80">{m.replyTo.snippet || 'media'}</span>
-                  </div>
+                  <button
+                    onClick={() => {
+                      const el = document.getElementById(`msg-${m.replyTo!.id}`)
+                      el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                      el?.animate([{ opacity: 0.4 }, { opacity: 1 }], { duration: 700 })
+                    }}
+                    className={`mb-1 block w-full rounded-lg border-l-2 px-2 py-1 text-left text-xs ${mine ? 'border-white/60 bg-white/10' : 'border-brand bg-brand/10'}`}
+                  >
+                    <span className="opacity-80">↩ {m.replyTo.snippet || 'media'}</span>
+                  </button>
                 )}
                 {m.kind === 'text' && <p className="whitespace-pre-wrap break-words">{m.text}</p>}
                 {(m.kind === 'gif' || m.kind === 'image') && <img src={m.mediaUrl} className="max-h-60 rounded-xl" onClick={() => m.mediaUrl && setViewer({ url: m.mediaUrl, video: false })} />}
@@ -197,14 +217,22 @@ export default function ChatRoom() {
 
       {/* Long-press message actions */}
       {active && (
-        <div className="fixed inset-0 z-[60] flex items-end justify-center" onClick={() => setActive(null)}>
+        <div className="fixed inset-0 z-[60] flex items-end justify-center" onClick={() => { setActive(null); setMoreReact(false) }}>
           <div className="absolute inset-0 bg-black/50" />
           <div className="relative mb-6 w-full max-w-sm rounded-3xl bg-card border border-line p-3 animate-fade-up" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-2 flex justify-around">
+            <div className="mb-2 flex items-center justify-around">
               {REACTIONS.map((r) => (
                 <button key={r} onClick={() => { if (user) toggleReaction(cid, active.id, user.uid, r); setActive(null) }} className="grid h-11 w-11 place-items-center rounded-full text-2xl active:scale-90">{r}</button>
               ))}
+              <button onClick={() => setMoreReact((v) => !v)} className={`grid h-11 w-11 place-items-center rounded-full text-xl ${moreReact ? 'bg-brand/20 text-brand' : 'bg-surface'}`}>＋</button>
             </div>
+            {moreReact && (
+              <div className="mb-2 grid max-h-40 grid-cols-8 gap-1 overflow-y-auto rounded-2xl bg-surface p-2">
+                {MORE_EMOJI.map((r) => (
+                  <button key={r} onClick={() => { if (user) toggleReaction(cid, active.id, user.uid, r); setActive(null); setMoreReact(false) }} className="grid h-9 place-items-center rounded-lg text-xl active:scale-90">{r}</button>
+                ))}
+              </div>
+            )}
             <div className="h-px bg-line" />
             <button onClick={() => { setReply({ id: active.id, snippet: snippet(active).slice(0, 60), from: active.from }); setActive(null) }} className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left"><Reply size={18} /> Reply</button>
             {active.kind === 'text' && <button onClick={() => { navigator.clipboard?.writeText(active.text || ''); setActive(null) }} className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left"><Copy size={18} /> Copy text</button>}
@@ -231,6 +259,18 @@ export default function ChatRoom() {
           <Reply size={16} className="text-brand" />
           <span className="flex-1 truncate text-sm text-muted">Replying: {reply.snippet || 'media'}</span>
           <button onClick={() => setReply(null)}><X size={16} className="text-muted" /></button>
+        </div>
+      )}
+
+      {recording && (
+        <div className="flex items-center gap-3 border-t border-line bg-card px-4 py-3">
+          <span className="h-3 w-3 animate-pulse rounded-full bg-rose-500" />
+          <div className="flex flex-1 items-end gap-0.5">
+            {Array.from({ length: 28 }).map((_, i) => (
+              <span key={i} className="w-1 rounded-full bg-brand" style={{ height: `${8 + Math.abs(Math.sin(recDur + i)) * 22}px`, transition: 'height .2s' }} />
+            ))}
+          </div>
+          <span className="font-mono text-sm tabular-nums">{String(Math.floor(recDur / 60)).padStart(2, '0')}:{String(recDur % 60).padStart(2, '0')}</span>
         </div>
       )}
 

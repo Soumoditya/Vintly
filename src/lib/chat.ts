@@ -76,12 +76,14 @@ export async function ensureConversation(me: ChatUser, other: ChatUser) {
 export function listenConversations(uid: string, cb: (rows: any[]) => void) {
   const fb = getFb()
   if (!fb) return () => {}
-  const q = query(
-    collection(fb.db, 'conversations'),
-    where('members', 'array-contains', uid),
-    orderBy('updatedAt', 'desc'),
-  )
-  return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))))
+  // No orderBy here — combining array-contains with orderBy needs a composite
+  // index (which silently returns nothing if missing). Sort on the client.
+  const q = query(collection(fb.db, 'conversations'), where('members', 'array-contains', uid))
+  return onSnapshot(q, (snap) => {
+    const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+    rows.sort((a: any, b: any) => (b.updatedAt?.toMillis?.() ?? 0) - (a.updatedAt?.toMillis?.() ?? 0))
+    cb(rows)
+  })
 }
 
 export function listenMessages(cid: string, cb: (msgs: Message[]) => void) {

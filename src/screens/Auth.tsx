@@ -64,7 +64,7 @@ export default function Auth() {
       <button onClick={() => nav(-1)} className="mt-2 w-fit text-muted"><ArrowLeft /></button>
       <div className="flex flex-1 flex-col justify-center">
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-3xl bg-brand text-white shadow-glow"><Sparkles /></div>
+          <img src="/logo.png" alt="Vintly" className="mx-auto mb-3 h-24 w-24 rounded-3xl shadow-glow" />
           <h1 className="text-3xl font-extrabold">Vintly</h1>
           <p className="mt-1 text-muted">{mode === 'up' ? 'Create your account' : 'Welcome back'}</p>
         </div>

@@ -35,16 +35,40 @@ export async function searchPlaces(q: string): Promise<Place[]> {
   return (j.results || []).map((p: any) => ({ name: p.name, country: p.country, admin1: p.admin1, lat: p.latitude, lon: p.longitude }))
 }
 
-export async function locateByIP(): Promise<Place | null> {
+async function reverseName(lat: number, lon: number): Promise<{ name: string; country: string }> {
+  try {
+    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&count=1&language=en`)
+    const j = await r.json()
+    const p = j.results?.[0]
+    return { name: p?.name || 'My location', country: p?.country || '' }
+  } catch { return { name: 'My location', country: '' } }
+}
+
+async function ipProviders(): Promise<Place | null> {
+  // Try a couple of free IP-geolocation services for resilience.
   try {
     const r = await fetch('https://ipapi.co/json/')
-    if (!r.ok) return null
-    const j = await r.json()
-    if (j.latitude == null) return null
-    return { name: j.city || 'My location', country: j.country_name || '', admin1: j.region, lat: j.latitude, lon: j.longitude }
-  } catch {
-    return null
-  }
+    if (r.ok) { const j = await r.json(); if (j.latitude != null) return { name: j.city || 'My location', country: j.country_name || '', admin1: j.region, lat: j.latitude, lon: j.longitude } }
+  } catch {}
+  try {
+    const r = await fetch('https://ipwho.is/')
+    if (r.ok) { const j = await r.json(); if (j.success && j.latitude != null) return { name: j.city || 'My location', country: j.country || '', admin1: j.region, lat: j.latitude, lon: j.longitude } }
+  } catch {}
+  return null
+}
+
+// Best-effort current location: precise GPS (if the webview allows) → IP fallback.
+export async function locateByIP(): Promise<Place | null> {
+  const gps = await new Promise<Place | null>((resolve) => {
+    if (!('geolocation' in navigator)) return resolve(null)
+    const t = setTimeout(() => resolve(null), 6000)
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => { clearTimeout(t); const n = await reverseName(pos.coords.latitude, pos.coords.longitude); resolve({ ...n, lat: pos.coords.latitude, lon: pos.coords.longitude }) },
+      () => { clearTimeout(t); resolve(null) },
+      { enableHighAccuracy: false, timeout: 6000, maximumAge: 600000 },
+    )
+  })
+  return gps || (await ipProviders())
 }
 
 export async function getWeather(lat: number, lon: number, days = 16): Promise<WeatherData> {

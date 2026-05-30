@@ -1,6 +1,9 @@
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Palette, Bell, User, Image, Check, Database, Upload, LogOut, Loader2 } from 'lucide-react'
+import { ArrowLeft, Palette, Bell, User, Image, Check, Database, Upload, LogOut, Loader2, Download } from 'lucide-react'
+
+const APP_VERSION = '0.3.0'
+const APK_URL = 'https://github.com/Soumoditya/Vintly/releases/download/latest/Vintly.apk'
 import { useStore } from '../lib/store'
 import { ACCENTS, hexToRgbTriple, type ThemeName } from '../lib/theme'
 import { firebaseReady } from '../lib/firebase'
@@ -64,6 +67,16 @@ export default function Settings() {
         <Card className="mb-3 flex items-center gap-3"><User className="text-brand" /><span className="flex-1 font-semibold">Edit profile</span><ArrowLeft className="rotate-180 text-muted" size={18} /></Card>
       </Link>
 
+      {/* App updates */}
+      <Card className="mb-3 flex items-center gap-3">
+        <div className="grid h-10 w-10 place-items-center rounded-2xl bg-brand/15 text-brand"><Download size={18} /></div>
+        <div className="flex-1">
+          <p className="font-semibold">Update Vintly</p>
+          <p className="text-xs text-muted">v{APP_VERSION} · get the newest build</p>
+        </div>
+        <a href={APK_URL} target="_blank" rel="noreferrer"><Button variant="soft">Download</Button></a>
+      </Card>
+
       {/* Theme */}
       <h2 className="mb-2 flex items-center gap-2 font-bold"><Palette size={18} /> Theme</h2>
       <Card className="mb-3">
@@ -108,8 +121,11 @@ export default function Settings() {
       <h2 className="mb-2 flex items-center gap-2 font-bold"><Image size={18} /> Chat wallpaper</h2>
       <Card className="mb-3">
         <div className="flex gap-2 overflow-x-auto pb-1">
-          {WALLPAPERS.map((w, i) => (
-            <button key={i} onClick={() => setSettings({ chatWallpaper: w })} className={`h-20 w-14 shrink-0 rounded-2xl border border-line ${settings.chatWallpaper === w ? 'ring-2 ring-brand' : ''}`} style={{ background: w || 'rgb(var(--surface))' }} />
+          <button onClick={() => setSettings({ chatWallpaper: '' })} className={`grid h-20 w-14 shrink-0 place-items-center rounded-2xl border border-line text-muted ${settings.chatWallpaper === '' ? 'ring-2 ring-brand' : ''}`} style={{ background: 'rgb(var(--surface))' }}>
+            <span className="text-[10px]">None</span>
+          </button>
+          {WALLPAPERS.slice(1).map((w, i) => (
+            <button key={i} onClick={() => setSettings({ chatWallpaper: w })} className={`h-20 w-14 shrink-0 rounded-2xl border border-line ${settings.chatWallpaper === w ? 'ring-2 ring-brand' : ''}`} style={{ background: w }} />
           ))}
           {/* Current custom wallpaper preview, if any */}
           {settings.chatWallpaper.includes('url(') && (
@@ -121,6 +137,9 @@ export default function Settings() {
           <input ref={wpRef} type="file" accept="image/*" className="hidden" onChange={uploadWallpaper} />
         </div>
         <p className="mt-2 text-xs text-muted">Tap the dashed box to upload your own photo as chat background.</p>
+        {settings.chatWallpaper.includes('url(') && (
+          <button onClick={() => setSettings({ chatWallpaper: '' })} className="mt-2 text-sm font-semibold text-rose-400">Remove custom wallpaper</button>
+        )}
       </Card>
 
       {/* Step goal */}

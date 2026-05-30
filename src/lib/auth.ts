@@ -101,6 +101,17 @@ export async function signIn(identifier: string, password: string) {
   return cred.user
 }
 
+// Sync a changed username to the public profile (so chat search finds you).
+// Returns true on success, false if taken/invalid/offline.
+export async function syncUsername(uid: string, username: string): Promise<boolean> {
+  const fb = getFb()
+  if (!fb || !validUsername(username)) return false
+  const cur = await getDocs(query(collection(fb.db, 'users'), where('usernameLower', '==', username.toLowerCase()), limit(1)))
+  if (!cur.empty && (cur.docs[0].data() as any).uid !== uid) return false // taken by someone else
+  await setDoc(doc(fb.db, 'users', uid), { username, usernameLower: username.toLowerCase() }, { merge: true })
+  return true
+}
+
 export async function resetPassword(email: string) {
   const fb = getFb()
   if (!fb) throw new Error('offline')

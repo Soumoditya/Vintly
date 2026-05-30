@@ -3,10 +3,13 @@
 //    permissions-rationale activity to AndroidManifest.xml
 //  • bumps minSdkVersion to 26 (required by androidx.health.connect)
 // Safe to run repeatedly (idempotent).
-import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, copyFileSync } from 'node:fs'
 
 const manifestPath = 'android/app/src/main/AndroidManifest.xml'
 const variablesPath = 'android/variables.gradle'
+const appGradlePath = 'android/app/build.gradle'
+const keystoreSrc = 'vintly-debug.keystore'
+const keystoreDst = 'android/app/vintly-debug.keystore'
 
 const PERMS_AND_QUERIES = `
     <!-- Vintly: Health Connect -->
@@ -64,5 +67,30 @@ function patchMinSdk() {
   console.log('Set minSdkVersion = 26')
 }
 
+// Use a committed, stable signing key so APK updates install over the old app
+// (no uninstall needed). Applies to the debug build type automatically.
+function patchSigning() {
+  if (!existsSync(appGradlePath) || !existsSync(keystoreSrc)) {
+    console.log('app build.gradle or keystore missing, skipping signing patch')
+    return
+  }
+  copyFileSync(keystoreSrc, keystoreDst)
+  let g = readFileSync(appGradlePath, 'utf8')
+  if (g.includes('vintly-debug.keystore')) { console.log('signing already patched'); return }
+  const block = `    signingConfigs {
+        debug {
+            storeFile file('vintly-debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+    buildTypes {`
+  g = g.replace('    buildTypes {', block)
+  writeFileSync(appGradlePath, g)
+  console.log('Patched app/build.gradle with stable debug signing')
+}
+
 patchManifest()
 patchMinSdk()
+patchSigning()

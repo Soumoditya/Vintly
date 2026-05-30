@@ -1,20 +1,22 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  Plus, Pin, Search, X, Archive, CheckSquare, Square, ListChecks, StickyNote, Trash2,
+  Plus, Pin, Search, X, Archive, ArchiveRestore, CheckSquare, Square, ListChecks, StickyNote, Trash2,
 } from 'lucide-react'
 import { useStore, type Note } from '../lib/store'
-import { EmptyState } from '../components/ui'
+import { EmptyState, Sheet, Button } from '../components/ui'
 import { fontClass, noteBgCss } from './NoteEditor'
 
 const uid = () => Math.random().toString(36).slice(2)
 
 export default function Notes() {
-  const { notes, addNote } = useStore()
+  const { notes, addNote, updateNote, trashNote } = useStore()
   const nav = useNavigate()
   const [q, setQ] = useState('')
   const [showArchived, setShowArchived] = useState(false)
   const [activeLabel, setActiveLabel] = useState('')
+  const [actionNote, setActionNote] = useState<Note | null>(null)
+  const pressTimer = useRef<any>(null)
 
   const allLabels = useMemo(() => Array.from(new Set(notes.flatMap((n) => n.labels || []))), [notes])
 
@@ -46,6 +48,10 @@ export default function Notes() {
           <button
             key={n.id}
             onClick={() => nav(`/note/${n.id}`)}
+            onContextMenu={(e) => { e.preventDefault(); setActionNote(n) }}
+            onTouchStart={() => { pressTimer.current = setTimeout(() => setActionNote(n), 450) }}
+            onTouchEnd={() => clearTimeout(pressTimer.current)}
+            onTouchMove={() => clearTimeout(pressTimer.current)}
             className={`block w-full break-inside-avoid rounded-3xl border border-line/60 p-4 text-left transition active:scale-[0.98] animate-fade-up ${fontClass(n.font)}`}
             style={{ background: bg }}
           >
@@ -125,6 +131,22 @@ export default function Notes() {
           </button>
         </div>
       )}
+
+      <Sheet open={!!actionNote} onClose={() => setActionNote(null)} title={actionNote?.title || 'Note'}>
+        {actionNote && (
+          <div className="grid grid-cols-3 gap-3">
+            <Button variant="ghost" onClick={() => { updateNote(actionNote.id, { pinned: !actionNote.pinned }); setActionNote(null) }} className="flex-col !py-4">
+              <Pin size={20} fill={actionNote.pinned ? 'currentColor' : 'none'} /> {actionNote.pinned ? 'Unpin' : 'Pin'}
+            </Button>
+            <Button variant="ghost" onClick={() => { updateNote(actionNote.id, { archived: !actionNote.archived }); setActionNote(null) }} className="flex-col !py-4">
+              {actionNote.archived ? <ArchiveRestore size={20} /> : <Archive size={20} />} {actionNote.archived ? 'Unarchive' : 'Archive'}
+            </Button>
+            <Button variant="danger" onClick={() => { trashNote(actionNote.id); setActionNote(null) }} className="flex-col !py-4">
+              <Trash2 size={20} /> Delete
+            </Button>
+          </div>
+        )}
+      </Sheet>
     </div>
   )
 }

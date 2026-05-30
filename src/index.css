@@ -78,16 +78,14 @@ body {
   outline: none;
 }
 
-/* Calendar page-turn animation — mimics a paper page flipping over */
+/* Calendar month change — calm, smooth slide + fade */
 @keyframes page-next {
-  0% { transform: perspective(1600px) rotateY(-58deg) scale(0.94); opacity: 0; filter: brightness(0.55); box-shadow: 24px 0 40px rgba(0,0,0,0.5); }
-  55% { opacity: 1; }
-  100% { transform: perspective(1600px) rotateY(0deg) scale(1); opacity: 1; filter: brightness(1); }
+  0% { transform: translateX(22px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
 }
 @keyframes page-prev {
-  0% { transform: perspective(1600px) rotateY(58deg) scale(0.94); opacity: 0; filter: brightness(0.55); box-shadow: -24px 0 40px rgba(0,0,0,0.5); }
-  55% { opacity: 1; }
-  100% { transform: perspective(1600px) rotateY(0deg) scale(1); opacity: 1; filter: brightness(1); }
+  0% { transform: translateX(-22px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
 }
-.page-next { animation: page-next 0.5s cubic-bezier(0.34, 1.2, 0.4, 1); transform-origin: left center; will-change: transform; }
-.page-prev { animation: page-prev 0.5s cubic-bezier(0.34, 1.2, 0.4, 1); transform-origin: right center; will-change: transform; }
+.page-next { animation: page-next 0.28s ease-out; }
+.page-prev { animation: page-prev 0.28s ease-out; }

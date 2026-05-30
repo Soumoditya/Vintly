@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, LogOut, Trophy, Flame, CheckSquare, Camera, Loader2 } from 'lucide-react'
 import { useStore } from '../lib/store'
-import { useAuth, signOut } from '../lib/auth'
+import { useAuth, signOut, syncUsername } from '../lib/auth'
 import { uploadToCloudinary, cloudinaryReady } from '../lib/cloudinary'
 import { Card, Input, Button, Avatar } from '../components/ui'
 
@@ -15,6 +15,13 @@ export default function Profile() {
   const done = tasks.filter((t) => t.done).length
   const photoRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  async function save() {
+    if (user && profile.username) await syncUsername(user.uid, profile.username).catch(() => {})
+    setSaved(true)
+    setTimeout(() => setSaved(false), 1800)
+  }
 
   async function uploadPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
@@ -71,6 +78,7 @@ export default function Profile() {
             ))}
           </div>
         </div>
+        <Button className="w-full" onClick={save}>{saved ? 'Saved ✓' : 'Save profile'}</Button>
       </Card>
 
       <p className="mt-3 text-xs text-muted">Longest streak: {engagement.longestStreak} days · Streak freezes: {engagement.freezes}</p>
